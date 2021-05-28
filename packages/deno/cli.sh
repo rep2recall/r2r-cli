@@ -5,4 +5,4 @@ deno run \
     --allow-read \
     --allow-run \
     --allow-env \
-    cli.ts
+    cli.ts ${1:}

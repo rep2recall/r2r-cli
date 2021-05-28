@@ -1,8 +1,5 @@
-import { serve } from "https://deno.land/std@0.97.0/http/server.ts";
-import {
-  parse as yamlParse,
-} from "https://deno.land/std@0.82.0/encoding/yaml.ts";
-import { locateChrome } from "./app.ts";
+import { serve, yamlParse } from "./deps.ts";
+import { locateChrome } from "./chrome.ts";
 
 const cfg = yamlParse(await Deno.readTextFile("config.yaml")) as {
   port: number;
