@@ -1,63 +1,40 @@
-import { serve, yamlParse } from "./deps.ts";
-import { locateChrome } from "./chrome.ts";
+import { argParse } from "./deps.ts";
+import { doLoad } from "./api/load.ts";
+import { doQuiz, getIdsFromPath } from "./api/quiz.ts";
+import { runServer } from "./server.ts";
 
-const cfg = yamlParse(await Deno.readTextFile("config.yaml")) as {
-  port: number;
-  app?: {
-    width?: number;
-    height?: number;
-    chromePath?: string;
-    remoteDebuggingPort?: number;
-  };
-};
+const args = argParse(Deno.args);
 
-if (cfg.app) {
-  cfg.app.chromePath = await locateChrome(cfg.app.chromePath) || undefined;
-}
+switch (args._[0]) {
+  case "load":
+    getPathsFromArgs().map((p) => doLoad(p));
+    break;
+  case "quiz":
+    await (async () => {
+      const filter = String(args.filter || "");
+      let ids: string[] | undefined = undefined;
 
-const s = serve({ port: cfg.port });
-console.log(`Server is listening at http://localhost:${cfg.port}`);
-
-if (cfg.app?.chromePath) {
-  let remoteDebuggingPort = cfg.app.remoteDebuggingPort;
-  if (!remoteDebuggingPort) {
-    const s1 = serve({ port: 0 });
-    remoteDebuggingPort = (s1.listener.addr as Deno.NetAddr).port;
-    s1.close();
-  }
-
-  Deno.run({
-    cmd: [
-      cfg.app.chromePath,
-      `--app=http://localhost:${cfg.port}`,
-      `--window-size=${cfg.app.width || 800},${cfg.app.height || 600}`,
-      `--remote-debugging-port=${remoteDebuggingPort}`,
-    ],
-    stdout: "inherit",
-    stdin: "inherit",
-  });
-
-  (async () => {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    while (true) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      try {
-        const s1 = serve({ port: remoteDebuggingPort });
-        s1.close();
-        break;
-      } catch (e) {
-        if (!(e instanceof Deno.errors.AddrInUse)) {
-          throw e;
-        }
+      if (args._.length > 1) {
+        ids = (await Promise.all(
+          getPathsFromArgs().map((p) => getIdsFromPath(p)),
+        ))
+          .flat();
       }
-    }
 
-    s.close();
-  })();
+      const sessionId = doQuiz(filter, ids);
+      await runServer().then((s) => s.open(`/quiz?sessionId=${sessionId}`))
+        .then((s) => s ? s.close() : null);
+    })();
+    break;
+  default:
+    await runServer().then((s) => s.open())
+      .then((s) => s ? s.close() : null);
 }
 
-for await (const req of s) {
-  req.respond({ body: "Hello World\n" });
+function getPathsFromArgs(): string[] {
+  const paths = args._.slice(1).map(String);
+  if (!paths.length) {
+    throw new Error("There must be paths");
+  }
+  return paths;
 }
