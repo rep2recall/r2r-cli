@@ -16,3 +16,4 @@ export { parse as argParse } from "https://deno.land/std@0.97.0/flags/mod.ts";
 
 export * as z from "https://deno.land/x/zod@v3.1.0/mod.ts";
 export { DB as Sqlite } from "https://deno.land/x/sqlite@v2.4.2/mod.ts";
+export * as eta from "https://deno.land/x/eta@v1.12.1/mod.ts";

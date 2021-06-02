@@ -1,5 +1,4 @@
 import { argParse } from "./deps.ts";
-import { doLoad } from "./api/load.ts";
 import { doQuiz, getIdsFromPath } from "./api/quiz.ts";
 import { LocalDB } from "./db/index.ts";
 import { runServer } from "./server.ts";
@@ -10,8 +9,11 @@ const db = new LocalDB();
 switch (args._[0]) {
   case "load":
     for (const p of getPathsFromArgs()) {
-      await doLoad(p);
+      await db.doLoad(p);
     }
+    break;
+  case "clean":
+    db.clean();
     break;
   case "quiz":
     await (async () => {
@@ -34,6 +36,8 @@ switch (args._[0]) {
     await runServer().then((s) => s.open())
       .then((s) => s ? s.close() : null);
 }
+
+db.close();
 
 function getPathsFromArgs(): string[] {
   const paths = args._.slice(1).map(String);
