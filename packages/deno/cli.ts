@@ -1,13 +1,17 @@
 import { argParse } from "./deps.ts";
 import { doLoad } from "./api/load.ts";
 import { doQuiz, getIdsFromPath } from "./api/quiz.ts";
+import { LocalDB } from "./db/index.ts";
 import { runServer } from "./server.ts";
 
 const args = argParse(Deno.args);
+const db = new LocalDB();
 
 switch (args._[0]) {
   case "load":
-    getPathsFromArgs().map((p) => doLoad(p));
+    for (const p of getPathsFromArgs()) {
+      await doLoad(p);
+    }
     break;
   case "quiz":
     await (async () => {

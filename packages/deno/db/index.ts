@@ -17,8 +17,7 @@ export class LocalDB {
       [name]        TEXT,
       front         TEXT,
       back          TEXT,
-      shared        TEXT,
-      [generated]   JSON
+      shared        TEXT
     );
 
     CREATE INDEX IF NOT EXISTS idx_model_name ON model ([name]);
@@ -50,8 +49,9 @@ export class LocalDB {
       deletedAt     UNINDEXED,  -- TIMESTAMP
       _id,          -- TEXT NOT NULL
       model,        -- TEXT NOT NULL REFERENCES model(_id) ON DELETE CASCADE
-      [key]         -- TEXT NOT NULL
-      [data]        -- JSON -- must be JSONified text
+      [key],        -- TEXT NOT NULL
+      [data],       -- JSON -- must be JSONified text
+      [generated]   UNINDEXED
     );
     `);
 

@@ -1,5 +1,15 @@
-import { pathResolve, serve, yamlParse } from "./deps.ts";
+import { pathResolve, serve, yamlParse, z } from "./deps.ts";
 import { locateChrome } from "./chrome.ts";
+
+const zConfig = z.object({
+  port: z.number(),
+  app: z.object({
+    width: z.number().optional(),
+    height: z.number().optional(),
+    chromePath: z.string().optional(),
+    remoteDebuggingPort: z.number().optional(),
+  }).optional(),
+});
 
 export async function runServer(): Promise<{
   open: (url?: string) => Promise<
@@ -8,17 +18,9 @@ export async function runServer(): Promise<{
     } | null
   >;
 }> {
-  const cfg = yamlParse(
+  const cfg = await zConfig.parseAsync(yamlParse(
     await Deno.readTextFile(pathResolve("config.yaml")),
-  ) as {
-    port: number;
-    app?: {
-      width?: number;
-      height?: number;
-      chromePath?: string;
-      remoteDebuggingPort?: number;
-    };
-  };
+  ));
 
   if (cfg.app) {
     cfg.app.chromePath = await locateChrome(cfg.app.chromePath) || undefined;
