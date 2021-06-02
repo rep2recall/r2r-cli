@@ -7,7 +7,7 @@ import {
 export function pathResolve(...paths: string[]) {
   return stdResolve(dirname(fromFileUrl(import.meta.url)), ...paths);
 }
-
+export { expandGlob } from "https://deno.land/std@0.97.0/fs/mod.ts";
 export { serve } from "https://deno.land/std@0.97.0/http/server.ts";
 export {
   parse as yamlParse,

@@ -1,7 +1,11 @@
-import { argParse } from "./deps.ts";
+import { argParse, expandGlob, pathResolve } from "./deps.ts";
 import { doQuiz, getIdsFromPath } from "./api/quiz.ts";
 import { LocalDB } from "./db/index.ts";
 import { runServer } from "./server.ts";
+
+for await (const file of expandGlob(pathResolve("plugins/*.{ts,js}"))) {
+  await import(file.path);
+}
 
 const args = argParse(Deno.args);
 const db = new LocalDB();
@@ -20,7 +24,7 @@ switch (args._[0]) {
       const filter = String(args.filter || "");
       let ids: string[] | undefined = undefined;
 
-      if (args._.length > 1) {
+      if (args._.length > 0) {
         ids = (await Promise.all(
           getPathsFromArgs().map((p) => getIdsFromPath(p)),
         ))

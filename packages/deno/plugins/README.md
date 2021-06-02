@@ -1,0 +1,1 @@
+All \*.{ts,js} in this folder will be loaded alphabetically.
