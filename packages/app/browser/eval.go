@@ -17,6 +17,11 @@ type EvalContext struct {
 	Output interface{}
 }
 
+type EvalOptions struct {
+	Plugins []string
+	Visible bool
+}
+
 // Eval - Evaluate JavaScript in EvalContext
 //
 // 		b := browser.Browser{}
@@ -24,22 +29,28 @@ type EvalContext struct {
 // 		b.Eval([]string{}, &ev)
 // 		fmt.Println(ev.Output)
 //
-func (b Browser) Eval(imports []string, scripts ...*EvalContext) {
-	opts := chromedp.DefaultExecAllocatorOptions[:]
-	execPath := b.GetExecPath()
-	if execPath != "" {
-		opts = append(opts, chromedp.ExecPath(execPath))
+func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
+	args := chromedp.DefaultExecAllocatorOptions[:]
+	if opts.Visible {
+		newArgs := make([]chromedp.ExecAllocatorOption, 0)
+		for i, a := range args {
+			if i != 2 {
+				newArgs = append(newArgs, a)
+			}
+		}
+		args = newArgs
 	}
 
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	execPath := b.GetExecPath()
+	if execPath != "" {
+		args = append(args, chromedp.ExecPath(execPath))
+	}
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), args...)
 	defer cancel()
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
-
-	for i, im := range imports {
-		imports[i] = strings.ReplaceAll(im, "\"", "\\\"")
-	}
 
 	actions := []chromedp.Action{
 		chromedp.Navigate("data:text/html," + url.PathEscape(fmt.Sprintf(`
@@ -51,15 +62,35 @@ func (b Browser) Eval(imports []string, scripts ...*EvalContext) {
 			<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		</head>
 		<body>
+			<div id="error" style="display: none; background-color: red"></div>
+			<pre id="output"></pre>
 			<script type="module">
-			import "%s";
+			%s;
+			window.__output = {};
 			</script>
 		</body>
 		</html>
-		`, strings.Join(imports, "\";\nimport \"")))),
+		`, strings.Join(opts.Plugins, "\n")))),
 	}
-	for _, s := range scripts {
-		actions = append(actions, chromedp.Evaluate(s.JS, &s.Output))
+	for i, s := range scripts {
+		js := fmt.Sprintf(`(async () => {
+			const r = %s;
+			return r;
+		})().then(r => {
+			__output['%d'] = r;
+			document.querySelector('#output').innerText = JSON.stringify(__output, null, 2);
+			if (Object.keys(__output).length === %d) document.querySelector('#output').setAttribute('selected', '')
+		}).catch(e => {
+			const el = document.querySelector('#error');
+			el.innerText += e;
+			el.style.display = 'block';
+		})`, s.JS, i, len(scripts))
+
+		actions = append(actions, chromedp.Evaluate(js, &s.Output))
+	}
+	actions = append(actions, chromedp.WaitSelected("#output"))
+	for i, s := range scripts {
+		actions = append(actions, chromedp.Evaluate(fmt.Sprintf("__output['%d']", i), &s.Output))
 	}
 
 	if e := chromedp.Run(

@@ -15,17 +15,27 @@ func Connect() *gorm.DB {
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	if err := db.AutoMigrate(
-		Model{},
-		Template{},
-		Card{},
-	); err != nil {
-		log.Fatalln(err)
+	mi := db.Migrator()
+	if !mi.HasTable(Model{}) {
+		if e := mi.CreateTable(Model{}); e != nil {
+			log.Fatalln(e)
+		}
+	}
+	if !mi.HasTable(Card{}) {
+		if e := mi.CreateTable(Card{}); e != nil {
+			log.Fatalln(e)
+		}
+	}
+	if !mi.HasTable(Template{}) {
+		if e := mi.CreateTable(Template{}); e != nil {
+			log.Fatalln(e)
+		}
 	}
 
 	if err := (Note{}).Init(db); err != nil {

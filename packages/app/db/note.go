@@ -79,12 +79,12 @@ func (NoteData) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
 }
 
 func (Note) Init(tx *gorm.DB) error {
-	r := tx.Raw(`
+	r := tx.Exec(`
 	CREATE VIRTUAL TABLE IF NOT EXISTS note USING fts5(
 		id,        		-- TEXT NOT NULL
 		updated_at,		-- TIMESTAMP
 		deleted_at,    	-- TIMESTAMP
-		model,        	-- TEXT NOT NULL REFERENCES model(id)
+		model_id,		-- TEXT NOT NULL REFERENCES model(id)
 		"key",        	-- TEXT NOT NULL
 		"data",       	-- JSON -- must be JSONified text
 		"generated" UNINDEXED

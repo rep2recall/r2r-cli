@@ -27,42 +27,44 @@ type LoadFile struct {
 		Back      string
 		Shared    string
 		Generated map[string]interface{} `validate:"blank-is-string"`
-	}
+	} `validate:"dive"`
 	Template []struct {
 		ID      string `validate:"required,uuid"`
-		ModelID string `validate:"required,uuid"`
+		ModelID string `validate:"required,uuid" yaml:"modelId"`
 		Name    string
 		Front   string
 		Back    string
 		Shared  string
-	}
+	} `validate:"dive"`
 	Note []struct {
 		ID      string                 `validate:"required,uuid"`
-		ModelID string                 `validate:"required,uuid"`
+		ModelID string                 `validate:"required,uuid" yaml:"modelId"`
 		Data    map[string]interface{} `validate:"required"`
-	}
+	} `validate:"dive"`
 	Card []struct {
 		ID         string `validate:"required,uuid"`
-		TemplateID string `validate:"required,uuid"`
-		NoteID     string `validate:"required,uuid"`
+		TemplateID string `validate:"required,uuid" yaml:"templateId"`
+		NoteID     string `validate:"required,uuid" yaml:"noteId"`
 		Tag        string
 		Front      string
 		Back       string
 		Shared     string
 		Mnemonic   string
-	}
+	} `validate:"dive"`
 }
 
 func ValidateBlankIsString(fl validator.FieldLevel) bool {
 	bl := fl.Field().MapIndex(reflect.ValueOf("_"))
 	if !bl.IsNil() {
-		return bl.Type().Name() == "string"
+		if bl.Elem().Type().String() != "string" {
+			return false
+		}
 	}
 
 	return true
 }
 
-func Load(tx *gorm.DB, f string) error {
+func Load(tx *gorm.DB, f string, debug bool) error {
 	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir(), f))
 	if e != nil {
 		return e
@@ -76,7 +78,7 @@ func Load(tx *gorm.DB, f string) error {
 	validate = validator.New()
 	validate.RegisterValidation("blank-is-string", ValidateBlankIsString)
 
-	if e := validate.Struct(loadFile); e != nil {
+	if e := validate.Struct(&loadFile); e != nil {
 		return e
 	}
 
@@ -89,7 +91,7 @@ func Load(tx *gorm.DB, f string) error {
 
 		if r := tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(Model{
+		}).Create(&Model{
 			ID:        m.ID,
 			Name:      m.Name,
 			Front:     m.Front,
@@ -104,7 +106,7 @@ func Load(tx *gorm.DB, f string) error {
 	for _, t := range loadFile.Template {
 		if r := tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(Template{
+		}).Create(&Template{
 			ID:      t.ID,
 			ModelID: t.ModelID,
 			Name:    t.Name,
@@ -126,37 +128,37 @@ func Load(tx *gorm.DB, f string) error {
 			if m.Generated != nil {
 				modelGenMap[n.ModelID] = m.Generated
 			}
+		}
 
-			if modelGenMap[n.ModelID] != nil && modelGenMap[n.ModelID]["_"] != nil {
-				jsb, e := json.Marshal(modelGenMap[n.ModelID]["_"].(string))
-				if e != nil {
-					return e
-				}
-				datab, e := json.Marshal(n.Data)
-				if e != nil {
-					return e
-				}
-				idb, e := json.Marshal(n.ID)
-				if e != nil {
-					return e
-				}
-
-				toGenerate = append(toGenerate, &browser.EvalContext{
-					JS: fmt.Sprintf(
-						`(async function() {
-							const data = %s;
-							await eta.renderAsync(%s, data);
-							return {
-								id: %s,
-								data
-							};
-						})();`,
-						string(datab),
-						string(jsb),
-						string(idb),
-					),
-				})
+		if modelGenMap[n.ModelID] != nil && modelGenMap[n.ModelID]["_"] != nil {
+			jsb, e := json.Marshal(modelGenMap[n.ModelID]["_"].(string))
+			if e != nil {
+				return e
 			}
+			datab, e := json.Marshal(n.Data)
+			if e != nil {
+				return e
+			}
+			idb, e := json.Marshal(n.ID)
+			if e != nil {
+				return e
+			}
+
+			toGenerate = append(toGenerate, &browser.EvalContext{
+				JS: fmt.Sprintf(
+					`(async function() {
+						const data = %s;
+						await Eta.renderAsync(%s, data);
+						return {
+							id: %s,
+							data
+						};
+					})();`,
+					string(datab),
+					string(jsb),
+					string(idb),
+				),
+			})
 		}
 	}
 
@@ -171,7 +173,12 @@ func Load(tx *gorm.DB, f string) error {
 			}
 
 			if strings.HasSuffix(path, ".js") {
-				plugins = append(plugins, filepath.ToSlash(path))
+				b, e := ioutil.ReadFile(path)
+				if e != nil {
+					return e
+				}
+
+				plugins = append(plugins, string(b))
 			}
 
 			return nil
@@ -179,11 +186,13 @@ func Load(tx *gorm.DB, f string) error {
 		if e != nil {
 			return e
 		}
+		plugins = append(plugins, "import 'https://cdn.jsdelivr.net/npm/eta/dist/browser/eta.min.js';")
 
 		b := browser.Browser{}
-		b.Eval([]string{
-			"https://cdn.jsdelivr.net/npm/eta/dist/browser/eta.min.js",
-		}, toGenerate...)
+		b.Eval(toGenerate, browser.EvalOptions{
+			Plugins: plugins,
+			Visible: debug,
+		})
 		for _, g := range toGenerate {
 			out := g.Output.(map[string]interface{})
 			noteGenResultMap[out["id"].(string)] = out["data"].(map[string]interface{})
@@ -205,7 +214,7 @@ func Load(tx *gorm.DB, f string) error {
 				return err
 			}
 
-			if r := tx.Where(Note{
+			if r := tx.Model(&Note{}).Where(&Note{
 				ID:      n.ID,
 				ModelID: n.ModelID,
 				Key:     key,
@@ -213,7 +222,7 @@ func Load(tx *gorm.DB, f string) error {
 				return r.Error
 			}
 
-			if r := tx.Create(Note{
+			if r := tx.Create(&Note{
 				ID:      n.ID,
 				ModelID: n.ModelID,
 				Key:     key,
@@ -227,7 +236,7 @@ func Load(tx *gorm.DB, f string) error {
 	for _, c := range loadFile.Card {
 		if r := tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(Card{
+		}).Create(&Card{
 			ID:         c.ID,
 			TemplateID: c.TemplateID,
 			NoteID:     c.NoteID,

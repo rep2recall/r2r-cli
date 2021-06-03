@@ -41,27 +41,22 @@ func main() {
 		Register("load").
 		SetShortDescription("load the YAML into the database and exit").
 		AddArgument("files...", "directory or YAML to scan for IDs", ""). // required
+		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
 			database := db.Connect()
-
-			fmt.Printf("Printing options of the `load` command...\n\n")
-
-			// print arguments
-			for k, v := range args {
-				fmt.Printf("arg -> %v: %v(%T)\n", k, v.Value, v.Value)
-			}
+			debug := false
 
 			// print flags
 			for k, v := range flags {
-				fmt.Printf("flag -> %v: %v(%T)\n", k, v.Value, v.Value)
+				if k == "debug" {
+					debug = v.Value.(bool)
+				}
 			}
 
 			if e := database.Transaction(func(tx *gorm.DB) error {
 				for k, v := range args {
-					fmt.Printf("arg -> %v: %v(%T)\n", k, v.Value, v.Value)
-
 					if k == "files" {
-						if e := db.Load(tx, v.Value); e != nil {
+						if e := db.Load(tx, v.Value, debug); e != nil {
 							return e
 						}
 					}
@@ -80,18 +75,6 @@ func main() {
 		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                       // not required
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
 			database := db.Connect()
-
-			fmt.Printf("Printing options of the `clean` command...\n\n")
-
-			// print arguments
-			for k, v := range args {
-				fmt.Printf("arg -> %v: %v(%T)\n", k, v.Value, v.Value)
-			}
-
-			// print flags
-			for k, v := range flags {
-				fmt.Printf("flag -> %v: %v(%T)\n", k, v.Value, v.Value)
-			}
 
 			if e := database.Transaction(func(tx *gorm.DB) error {
 				if e := (db.Card{}).Tidy(tx); e != nil {
