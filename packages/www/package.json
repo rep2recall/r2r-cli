@@ -1,0 +1,17 @@
+{
+  "name": "@rep2recall/www",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "snowpack dev",
+    "build": "snowpack build"
+  },
+  "dependencies": {
+    "eta": "^1.12.1"
+  },
+  "devDependencies": {
+    "snowpack": "^3.5.4"
+  }
+}

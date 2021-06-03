@@ -21,7 +21,7 @@ import (
 
 var validate *validator.Validate
 
-type LoadFile struct {
+type loadedFile struct {
 	Model []struct {
 		ID        string `validate:"required,uuid"`
 		Name      string
@@ -67,13 +67,18 @@ func ValidateBlankIsString(fl validator.FieldLevel) bool {
 	return true
 }
 
-func Load(tx *gorm.DB, f string, debug bool) error {
+type LoadOptions struct {
+	Debug bool
+	Port  int
+}
+
+func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir(), f))
 	if e != nil {
 		return e
 	}
 
-	var loadFile LoadFile
+	var loadFile loadedFile
 	if e := yaml.Unmarshal(b, &loadFile); e != nil {
 		return e
 	}
@@ -187,13 +192,13 @@ func Load(tx *gorm.DB, f string, debug bool) error {
 	if e != nil {
 		return e
 	}
-	plugins = append(plugins, "import 'https://cdn.jsdelivr.net/npm/eta/dist/browser/eta.min.js';")
 
 	if len(toGenerate) > 0 {
 		b := browser.Browser{}
 		b.Eval(toGenerate, browser.EvalOptions{
 			Plugins: plugins,
-			Visible: debug,
+			Visible: opts.Debug,
+			Port:    opts.Port,
 		})
 		for _, g := range toGenerate {
 			out := g.Output.(map[string]interface{})
@@ -352,7 +357,8 @@ func Load(tx *gorm.DB, f string, debug bool) error {
 		b := browser.Browser{}
 		b.Eval(toGenerate, browser.EvalOptions{
 			Plugins: plugins,
-			Visible: debug,
+			Visible: opts.Debug,
+			Port:    opts.Port,
 		})
 		for _, g := range toGenerate {
 			out := g.Output.(map[string]interface{})

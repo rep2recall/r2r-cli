@@ -4,17 +4,10 @@
             "path": "packages/app"
         },
         {
-            "path": "packages/deno"
-        },
-        {
             "path": "packages/www"
         },
         {
             "path": "."
         }
-    ],
-    "settings": {
-        "deno.lint": true,
-        "deno.unstable": false
-    }
+    ]
 }

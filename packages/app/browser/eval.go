@@ -2,8 +2,8 @@ package browser
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/chromedp/chromedp"
@@ -20,6 +20,7 @@ type EvalContext struct {
 type EvalOptions struct {
 	Plugins []string
 	Visible bool
+	Port    int
 }
 
 // Eval - Evaluate JavaScript in EvalContext
@@ -46,26 +47,22 @@ func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
-	actions := []chromedp.Action{
-		chromedp.Navigate("data:text/html," + url.PathEscape(fmt.Sprintf(`
-		<!DOCTYPE html>
-		<html lang="en">
-		<head>
-			<base href=".">
-			<meta charset="UTF-8">
-			<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		</head>
-		<body>
-			<div id="error" style="display: none; background-color: red"></div>
-			<pre id="output"></pre>
-			<script type="module">
-			%s;
-			window.__output = {};
-			</script>
-		</body>
-		</html>
-		`, strings.Join(opts.Plugins, "\n")))),
+	pluginb, e := json.Marshal(strings.Join(opts.Plugins, ";\n"))
+	if e != nil {
+		panic(e)
 	}
+
+	actions := []chromedp.Action{
+		chromedp.Navigate(fmt.Sprintf("http://localhost:%d/script.html", opts.Port)),
+		chromedp.WaitReady("body"),
+		chromedp.EvaluateAsDevTools(fmt.Sprintf(`
+		s = document.createElement('script');
+		s.type = "module";
+		s.innerHTML = %s;
+		document.body.append(s);`, string(pluginb)), nil),
+		chromedp.WaitReady("body"),
+	}
+
 	for i, s := range scripts {
 		js := fmt.Sprintf(`(async () => {
 			const r = %s;
@@ -77,6 +74,7 @@ func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
 		}).catch(e => {
 			const el = document.querySelector('#error');
 			el.innerText += e;
+			el.innerHTML += '<br/>';
 			el.style.display = 'block';
 		})`, s.JS, i, len(scripts))
 

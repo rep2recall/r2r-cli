@@ -1,6 +1,0 @@
-port: 27524
-app:
-  width: 800
-  height: 600
-  # chromePath: /usr/bin/google-chrome
-  # remoteDebuggingPort: 9222

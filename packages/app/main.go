@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/rep2recall/rep2recall/browser"
 	"github.com/rep2recall/rep2recall/db"
+	"github.com/rep2recall/rep2recall/server"
 	"github.com/thatisuday/commando"
 	"gorm.io/gorm"
 )
@@ -21,20 +23,73 @@ func main() {
 		Register(nil).
 		SetShortDescription("open in GUI mode, for full interaction").
 		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).
+		AddFlag("debug", "whether to run in debug mode", commando.Bool, false).
 		AddFlag("browser", "browser to open (default: Chrome with Edge fallback)", commando.String, "."). // not required
 		AddFlag("server", "run in server mode (don't open the browser)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			fmt.Printf("Printing options of the `root` command...\n\n")
+			port := defaultPort
+			debug := false
+			browserOfChoice := "."
+			isServer := false
 
-			// print arguments
-			for k, v := range args {
-				fmt.Printf("arg -> %v: %v(%T)\n", k, v.Value, v.Value)
-			}
-
-			// print flags
 			for k, v := range flags {
-				fmt.Printf("flag -> %v: %v(%T)\n", k, v.Value, v.Value)
+				switch k {
+				case "port":
+					port = v.Value.(int)
+				case "debug":
+					debug = v.Value.(bool)
+				case "browser":
+					browserOfChoice = v.Value.(string)
+				case "server":
+					isServer = v.Value.(bool)
+				}
 			}
+
+			if isServer {
+				server.Serve(server.ServerOptions{
+					Proxy: false,
+					Debug: debug,
+					Port:  port,
+				})
+			} else {
+				if browserOfChoice == "." {
+					browserOfChoice = ""
+				}
+				s := server.Serve(server.ServerOptions{
+					Proxy: false,
+					Debug: debug,
+					Port:  port,
+				})
+
+				s.WaitUntilReady()
+
+				b := browser.Browser{
+					ExecPath: browserOfChoice,
+				}
+				b.AppMode(fmt.Sprintf("http://localhost:%d", port), browser.IsMaximized())
+
+				s.Close()
+			}
+		})
+
+	commando.
+		Register("proxy").
+		SetShortDescription("start as proxy server, for development").
+		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).
+		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
+			port := defaultPort
+
+			for k, v := range flags {
+				if k == "port" {
+					port = v.Value.(int)
+				}
+			}
+
+			server.Serve(server.ServerOptions{
+				Proxy: true,
+				Debug: true,
+				Port:  port,
+			})
 		})
 
 	commando.
@@ -42,21 +97,41 @@ func main() {
 		SetShortDescription("load the YAML into the database and exit").
 		AddArgument("files...", "directory or YAML to scan for IDs", ""). // required
 		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
+		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			database := db.Connect()
 			debug := false
+			port := defaultPort
 
-			// print flags
 			for k, v := range flags {
 				if k == "debug" {
 					debug = v.Value.(bool)
 				}
 			}
 
-			if e := database.Transaction(func(tx *gorm.DB) error {
+			for k, v := range flags {
+				switch k {
+				case "port":
+					port = v.Value.(int)
+				case "debug":
+					debug = v.Value.(bool)
+				}
+			}
+
+			s := server.Serve(server.ServerOptions{
+				Proxy: false,
+				Debug: debug,
+				Port:  port,
+			})
+
+			s.WaitUntilReady()
+
+			if e := s.DB.Transaction(func(tx *gorm.DB) error {
 				for k, v := range args {
 					if k == "files" {
-						if e := db.Load(tx, v.Value, debug); e != nil {
+						if e := db.Load(tx, v.Value, db.LoadOptions{
+							Debug: debug,
+							Port:  port,
+						}); e != nil {
 							return e
 						}
 					}
@@ -66,6 +141,8 @@ func main() {
 			}); e != nil {
 				panic(e)
 			}
+
+			s.Close()
 		})
 
 	commando.
@@ -122,18 +199,40 @@ func main() {
 		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                       // not required
 		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).                               // not required
 		AddFlag("browser", "browser to open (default: Chrome with Edge fallback)", commando.String, ".").     // not required
+		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			fmt.Printf("Printing options of the `quiz` command...\n\n")
+			port := defaultPort
+			debug := false
+			browserOfChoice := "."
 
-			// print arguments
-			for k, v := range args {
-				fmt.Printf("arg -> %v: %v(%T)\n", k, v.Value, v.Value)
-			}
-
-			// print flags
 			for k, v := range flags {
-				fmt.Printf("flag -> %v: %v(%T)\n", k, v.Value, v.Value)
+				switch k {
+				case "port":
+					port = v.Value.(int)
+				case "debug":
+					debug = v.Value.(bool)
+				case "browser":
+					browserOfChoice = v.Value.(string)
+				}
 			}
+
+			if browserOfChoice == "." {
+				browserOfChoice = ""
+			}
+			s := server.Serve(server.ServerOptions{
+				Proxy: false,
+				Debug: debug,
+				Port:  port,
+			})
+
+			s.WaitUntilReady()
+
+			b := browser.Browser{
+				ExecPath: browserOfChoice,
+			}
+			b.AppMode(fmt.Sprintf("http://localhost:%d/quiz.html", port), browser.IsMaximized())
+
+			s.Close()
 		})
 
 	// parse command-line arguments
