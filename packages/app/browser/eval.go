@@ -9,11 +9,21 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
+// EvalContext - Container for eval context, and capture the result
+//
+// @see Eval
 type EvalContext struct {
 	JS     string
 	Output interface{}
 }
 
+// Eval - Evaluate JavaScript in EvalContext
+//
+// 		b := browser.Browser{}
+// 		ev := browser.EvalContext{ JS: "1 + 1" }
+// 		b.Eval([]string{}, &ev)
+// 		fmt.Println(ev.Output)
+//
 func (b Browser) Eval(imports []string, scripts ...*EvalContext) {
 	opts := chromedp.DefaultExecAllocatorOptions[:]
 	execPath := b.GetExecPath()

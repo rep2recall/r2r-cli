@@ -7,8 +7,10 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
+// AppSize - Dummy placeholder for fixed window size, or maximized
 type AppSize chromedp.ExecAllocatorOption
 
+// IsMaximized - maximized AppSize
 func IsMaximized() AppSize {
 	return chromedp.Flag("start-maximized", true)
 }
@@ -18,9 +20,13 @@ func WindowSize(width, height int) AppSize {
 	return chromedp.WindowSize(width, height)
 }
 
+// AppMode opens browser is AppMode for specified AppSize
+//
+// 		b := browser.Browser{}
+// 		b.AppMode("https://www.duckduckgo.com", browser.IsMaximized())
+//
 func (b Browser) AppMode(url string, size AppSize) {
 	opts := []chromedp.ExecAllocatorOption{
-		chromedp.ExecPath(""),
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.Flag("app", url),

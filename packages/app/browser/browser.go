@@ -5,18 +5,27 @@ import (
 	"runtime"
 )
 
+// Browser - Container for Chrome/Edge locator
 type Browser struct {
 	ExecPath string
 }
 
+// GetExecPath - Get real execPath for Chrome/Edge, if not specified.
 func (b Browser) GetExecPath() string {
 	path := b.ExecPath
-	if path == "" {
+
+	switch path {
+	case "":
 		path = b.locateChrome()
-	}
-	if path == "" {
+		if path == "" {
+			path = b.locateEdge()
+		}
+	case "chrome", "google-chrome":
+		path = b.locateChrome()
+	case "edge", "msedge", "microsoft-edge":
 		path = b.locateEdge()
 	}
+
 	return path
 }
 
