@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 
 	"gorm.io/gorm"
@@ -23,14 +24,14 @@ type Card struct {
 	Back        string
 	Shared      string
 	Mnemonic    string
-	SRSLevel    int       `gorm:"index"`
-	NextReview  time.Time `gorm:"index"`
-	LastRight   time.Time `gorm:"index"`
-	LastWrong   time.Time `gorm:"index"`
-	MaxRight    int       `gorm:"index"`
-	MaxWrong    int       `gorm:"index"`
-	RightStreak int       `gorm:"index"`
-	WrongStreak int       `gorm:"index"`
+	SRSLevel    int          `gorm:"index"`
+	NextReview  sql.NullTime `gorm:"index"`
+	LastRight   sql.NullTime `gorm:"index"`
+	LastWrong   sql.NullTime `gorm:"index"`
+	MaxRight    int          `gorm:"index"`
+	MaxWrong    int          `gorm:"index"`
+	RightStreak int          `gorm:"index"`
+	WrongStreak int          `gorm:"index"`
 }
 
 func (Card) Tidy(tx *gorm.DB) error {

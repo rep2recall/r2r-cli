@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator"
+	"github.com/google/uuid"
 	"github.com/rep2recall/rep2recall/browser"
 	"github.com/rep2recall/rep2recall/shared"
 	"gopkg.in/yaml.v2"
@@ -35,6 +37,7 @@ type LoadFile struct {
 		Front   string
 		Back    string
 		Shared  string
+		If      string
 	} `validate:"dive"`
 	Note []struct {
 		ID      string                 `validate:"required,uuid"`
@@ -163,31 +166,30 @@ func Load(tx *gorm.DB, f string, debug bool) error {
 	}
 
 	noteGenResultMap := make(map[string]map[string]interface{})
+	plugins := []string{}
+
+	e = filepath.Walk(filepath.Join(shared.UserDataDir(), "plugins"), func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if strings.HasSuffix(path, ".js") {
+			b, e := ioutil.ReadFile(path)
+			if e != nil {
+				return e
+			}
+
+			plugins = append(plugins, string(b))
+		}
+
+		return nil
+	})
+	if e != nil {
+		return e
+	}
+	plugins = append(plugins, "import 'https://cdn.jsdelivr.net/npm/eta/dist/browser/eta.min.js';")
 
 	if len(toGenerate) > 0 {
-		plugins := []string{}
-
-		e = filepath.Walk(filepath.Join(shared.UserDataDir(), "plugins"), func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if strings.HasSuffix(path, ".js") {
-				b, e := ioutil.ReadFile(path)
-				if e != nil {
-					return e
-				}
-
-				plugins = append(plugins, string(b))
-			}
-
-			return nil
-		})
-		if e != nil {
-			return e
-		}
-		plugins = append(plugins, "import 'https://cdn.jsdelivr.net/npm/eta/dist/browser/eta.min.js';")
-
 		b := browser.Browser{}
 		b.Eval(toGenerate, browser.EvalOptions{
 			Plugins: plugins,
@@ -197,6 +199,11 @@ func Load(tx *gorm.DB, f string, debug bool) error {
 			out := g.Output.(map[string]interface{})
 			noteGenResultMap[out["id"].(string)] = out["data"].(map[string]interface{})
 		}
+	}
+
+	now := TimeString{
+		Valid: true,
+		Time:  time.Now(),
 	}
 
 	for _, n := range loadFile.Note {
@@ -218,16 +225,162 @@ func Load(tx *gorm.DB, f string, debug bool) error {
 				ID:      n.ID,
 				ModelID: n.ModelID,
 				Key:     key,
-			}).UpdateColumn("id", "_"+n.ID); r.Error != nil {
+			}).UpdateColumn("id", "_"+n.ID).Updates(&Note{
+				UpdatedAt: now,
+				DeletedAt: now,
+			}); r.Error != nil {
 				return r.Error
 			}
 
 			if r := tx.Create(&Note{
-				ID:      n.ID,
-				ModelID: n.ModelID,
-				Key:     key,
-				Data:    data,
+				ID:        n.ID,
+				CreatedAt: now,
+				UpdatedAt: now,
+				ModelID:   n.ModelID,
+				Key:       key,
+				Data:      data,
 			}); r.Error != nil {
+				return r.Error
+			}
+		}
+	}
+
+	templateToCreate := make(map[string]Template)
+
+	for _, m := range loadFile.Model {
+		tids := make([]string, 0)
+		for _, t := range loadFile.Template {
+			tids = append(tids, t.ID)
+		}
+
+		var templates []Template
+		if r := tx.Where("model_id = ?", m.ID).Or("id IN ?", tids).Find(&templates); r.Error != nil {
+			return r.Error
+		}
+		for _, t := range templates {
+			templateToCreate[t.ID] = t
+		}
+	}
+
+	type cardPre struct {
+		If       string
+		Model    Model
+		Template Template
+		Note     Note
+	}
+	cardToCompile := make(map[string]cardPre)
+	modelMap := make(map[string]Model)
+	templateMap := make(map[string]Template)
+
+	for tid, t := range templateToCreate {
+		if t.ModelID != "" {
+			var notes []Note
+			if r := tx.Raw(`
+			SELECT * FROM note WHERE model_id = ?
+			`, t.ModelID).Find(&notes); r.Error != nil {
+				return r.Error
+			}
+
+			model := modelMap[t.ModelID]
+			if model.ID == "" {
+				if r := tx.Where("id = ?", t.ModelID).First(&model); r.Error != nil {
+					return r.Error
+				}
+				modelMap[t.ModelID] = model
+			}
+
+			template := templateMap[tid]
+			if template.ID == "" {
+				t0 := templateToCreate[tid]
+				if t0.ID != "" {
+					templateMap[tid] = t0
+				}
+			}
+			if template.ID == "" {
+				if r := tx.Where("id = ?", tid).First(&template); r.Error != nil {
+					return r.Error
+				}
+				templateMap[tid] = template
+			}
+
+			for _, n := range notes {
+				cardToCompile[uuid.New().String()] = cardPre{
+					If:       t.If,
+					Note:     n,
+					Model:    model,
+					Template: template,
+				}
+			}
+		}
+	}
+
+	toGenerate = []*browser.EvalContext{}
+	for id, ca := range cardToCompile {
+		if ca.If != "" {
+			jsb, e := json.Marshal(ca.If)
+			if e != nil {
+				return e
+			}
+			datab, e := json.Marshal(ca.Note.Data)
+			if e != nil {
+				return e
+			}
+			idb, e := json.Marshal(id)
+			if e != nil {
+				return e
+			}
+
+			toGenerate = append(toGenerate, &browser.EvalContext{
+				JS: fmt.Sprintf(
+					`(async function() {
+					const data = %s;
+					await Eta.renderAsync(%s, data);
+					return {
+						id: %s,
+						data
+					};
+				})();`,
+					string(datab),
+					string(jsb),
+					string(idb),
+				),
+			})
+		}
+	}
+
+	if len(toGenerate) > 0 {
+		b := browser.Browser{}
+		b.Eval(toGenerate, browser.EvalOptions{
+			Plugins: plugins,
+			Visible: debug,
+		})
+		for _, g := range toGenerate {
+			out := g.Output.(map[string]interface{})
+			c := cardToCompile[out["id"].(string)]
+			if out["data"].(bool) {
+				c.If = "true"
+			} else {
+				c.If = "false"
+			}
+		}
+	}
+
+	for id, ca := range cardToCompile {
+		if ca.If != "false" {
+			if r := tx.
+				Create(&Card{
+					ID:         id,
+					TemplateID: ca.Template.ID,
+					NoteID:     ca.Note.ID,
+				}); r.Error != nil {
+				return r.Error
+			}
+		} else if ca.Template.ID != "" && ca.Note.ID != "" {
+			if r := tx.
+				Delete(&Card{
+					TemplateID: ca.Template.ID,
+					NoteID:     ca.Note.ID,
+				}); r.Error != nil {
 				return r.Error
 			}
 		}

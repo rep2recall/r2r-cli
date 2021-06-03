@@ -19,6 +19,7 @@ type Template struct {
 	Front  string
 	Back   string
 	Shared string
+	If     string
 }
 
 func (Template) Tidy(tx *gorm.DB) error {

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -15,15 +16,48 @@ import (
 // Note is an FTS5 model
 type Note struct {
 	ID        string
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
+	CreatedAt TimeString
+	UpdatedAt TimeString
+	DeletedAt TimeString
 
 	ModelID string
-	Model   Model
 
-	Key       string
-	Data      NoteData
-	Generated bool
+	Key  string
+	Data NoteData
+}
+
+type TimeString sql.NullTime
+
+func (j *TimeString) Scan(value interface{}) error {
+	s, ok := value.(string)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal timestamp value:", value))
+	}
+
+	if s == "" {
+		return nil
+	}
+
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return err
+	}
+
+	j.Time = t
+	return nil
+}
+
+func (j TimeString) Value() (driver.Value, error) {
+	if j.Time.IsZero() {
+		return nil, nil
+	}
+
+	b, e := j.Time.MarshalText()
+	if e != nil {
+		return nil, e
+	}
+
+	return string(b), nil
 }
 
 type NoteData struct {
@@ -82,11 +116,12 @@ func (Note) Init(tx *gorm.DB) error {
 	r := tx.Exec(`
 	CREATE VIRTUAL TABLE IF NOT EXISTS note USING fts5(
 		id,        		-- TEXT NOT NULL
+		created_at,		-- TIMESTAMP
 		updated_at,		-- TIMESTAMP
 		deleted_at,    	-- TIMESTAMP
 		model_id,		-- TEXT NOT NULL REFERENCES model(id)
 		"key",        	-- TEXT NOT NULL
-		"data",       	-- JSON -- must be JSONified text
+		"data",       	-- JSON or TEXT
 		"generated" UNINDEXED
 	);
 	`)

@@ -23,12 +23,6 @@ type EvalOptions struct {
 }
 
 // Eval - Evaluate JavaScript in EvalContext
-//
-// 		b := browser.Browser{}
-// 		ev := browser.EvalContext{ JS: "1 + 1" }
-// 		b.Eval([]string{}, &ev)
-// 		fmt.Println(ev.Output)
-//
 func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
 	args := chromedp.DefaultExecAllocatorOptions[:]
 	if opts.Visible {
