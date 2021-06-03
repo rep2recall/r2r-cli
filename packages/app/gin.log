@@ -3,8 +3,3 @@
  - using code:	gin.SetMode(gin.ReleaseMode)
 
 [GIN-debug] GET    /server/config            --> github.com/rep2recall/rep2recall/server.Serve.func4 (5 handlers)
-[2021-06-04T00:51:36+07:00] HEAD 404 17.012µs /server/config 
-[2021-06-04T00:51:37+07:00] GET 200 3.621547ms /script.html 
-[2021-06-04T00:51:37+07:00] GET 200 99.505µs /eta.js 
-[2021-06-04T00:51:37+07:00] GET 200 293.518µs /_snowpack/pkg/eta.js 
-[2021-06-04T00:51:37+07:00] GET 404 40.536µs /favicon.ico 

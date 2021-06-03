@@ -19,4 +19,15 @@ module.exports = {
   buildOptions: {
     out: '../app/public'
   },
+  routes: [
+    {
+      src: '/api/.*',
+      dest: (req, res) => {
+        return require('http2-proxy').web(req, res, {
+          hostname: 'localhost',
+          port: 25459,
+        });
+      },
+    },
+  ]
 };

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/rep2recall/rep2recall/browser"
 	"github.com/rep2recall/rep2recall/db"
@@ -46,11 +47,18 @@ func main() {
 			}
 
 			if isServer {
-				server.Serve(server.ServerOptions{
+				s := server.Serve(server.ServerOptions{
 					Proxy: false,
 					Debug: debug,
 					Port:  port,
 				})
+
+				forever := make(chan bool)
+
+				log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+				<-forever
+
+				s.Close()
 			} else {
 				if browserOfChoice == "." {
 					browserOfChoice = ""
@@ -85,11 +93,18 @@ func main() {
 				}
 			}
 
-			server.Serve(server.ServerOptions{
+			s := server.Serve(server.ServerOptions{
 				Proxy: true,
 				Debug: true,
 				Port:  port,
 			})
+
+			forever := make(chan bool)
+
+			log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+			<-forever
+
+			s.Close()
 		})
 
 	commando.
