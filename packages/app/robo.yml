@@ -1,6 +1,10 @@
 build:
   command: |
     go build --tags "{{ .buildTags }}" -o {{ .exe }}
+run:
+  command: |
+    robo build
+    ./{{ .exe }} $@
 
 variables:
   buildTags: sqlite_fts5 sqlite_json1

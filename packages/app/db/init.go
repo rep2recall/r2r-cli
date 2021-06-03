@@ -20,13 +20,17 @@ func Connect() *gorm.DB {
 		log.Fatalln(err)
 	}
 
-	db.AutoMigrate(
+	if err := db.AutoMigrate(
 		Model{},
 		Template{},
 		Card{},
-	)
+	); err != nil {
+		log.Fatalln(err)
+	}
 
-	(Note{}).Init(db)
+	if err := (Note{}).Init(db); err != nil {
+		log.Fatalln(err)
+	}
 
 	return db
 }

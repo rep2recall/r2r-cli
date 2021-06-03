@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +40,10 @@ func (j *NoteData) Scan(value interface{}) error {
 	return nil
 }
 
+func (j NoteData) Value() (driver.Value, error) {
+	return j.Raw, nil
+}
+
 func (j NoteData) Get() (interface{}, error) {
 	b := []byte(j.Raw)
 	if regexp.MustCompile("^{.+}$").Match(b) {
@@ -74,15 +79,15 @@ func (NoteData) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
 }
 
 func (Note) Init(tx *gorm.DB) error {
-	r := tx.Exec(`
-	CREATE TABLE IF NOT EXISTS note USING fts5(
-		_id,          -- TEXT NOT NULL
-		updatedAt,    -- TIMESTAMP
-		deletedAt,    -- TIMESTAMP
-		model,        -- TEXT NOT NULL REFERENCES model(id)
-		[key],        -- TEXT NOT NULL
-		[data],       -- JSON -- must be JSONified text
-		[generated]   UNINDEXED
+	r := tx.Raw(`
+	CREATE VIRTUAL TABLE IF NOT EXISTS note USING fts5(
+		id,        		-- TEXT NOT NULL
+		updated_at,		-- TIMESTAMP
+		deleted_at,    	-- TIMESTAMP
+		model,        	-- TEXT NOT NULL REFERENCES model(id)
+		"key",        	-- TEXT NOT NULL
+		"data",       	-- JSON -- must be JSONified text
+		"generated" UNINDEXED
 	);
 	`)
 	if r.Error != nil {
@@ -100,7 +105,7 @@ func (Note) Tidy(tx *gorm.DB) error {
 		Or("model_id NOT IN (SELECT id FROM model)").
 		Or("ROWID NOT IN (SELECT ROWID FROM note GROUP BY id, [key])").
 		Or("ROWID NOT IN (SELECT ROWID FROM note GROUP BY model_id)").
-		Delete(Note{}); r.Error != nil {
+		Delete(&Note{}); r.Error != nil {
 		return r.Error
 	}
 

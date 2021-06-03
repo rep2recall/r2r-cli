@@ -22,6 +22,7 @@ type Card struct {
 	Front       string
 	Back        string
 	Shared      string
+	Mnemonic    string
 	SRSLevel    int       `gorm:"index"`
 	NextReview  time.Time `gorm:"index"`
 	LastRight   time.Time `gorm:"index"`
@@ -38,7 +39,7 @@ func (Card) Tidy(tx *gorm.DB) error {
 		Or("template_id IS NULL AND note_id IS NOT NULL").
 		Or("template_id IS NOT NULL AND note_id IS NOT NULL AND ROWID NOT IN (SELECT ROWID FROM [card] GROUP BY template_id, note_id)").
 		Or("template_id IS NULL AND note_id IS NULL AND front IS NULL").
-		Delete(Card{}); r.Error != nil {
+		Delete(&Card{}); r.Error != nil {
 		return r.Error
 	}
 

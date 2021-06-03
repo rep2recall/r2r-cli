@@ -24,32 +24,33 @@ type Model struct {
 	Generated JSONObject
 }
 
-type JSONObject struct {
-	Root string
-	Data map[string]interface{}
-}
+type JSONObject map[string]interface{}
 
 // Scan scan value into JSON, implements sql.Scanner interface
 func (j *JSONObject) Scan(value interface{}) error {
+	if value == nil {
+		*j = nil
+		return nil
+	}
+
 	s, ok := value.(string)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
 	}
 
-	r := map[string]interface{}{}
+	r := make(map[string]interface{})
 	err := json.Unmarshal([]byte(s), &r)
-	*j = JSONObject{
-		Root: r["_"].(string),
-		Data: r,
-	}
+	*j = r
 	return err
 }
 
 // Value return json value, implement driver.Value interface
 func (j JSONObject) Value() (driver.Value, error) {
-	j.Data["_"] = j.Root
+	if j == nil {
+		return nil, nil
+	}
 
-	b, err := json.Marshal(j.Data)
+	b, err := json.Marshal(j)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +66,11 @@ func (JSONObject) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
 		return "JSONB"
 	}
 	return "TEXT"
+}
+
+// GormDataType gorm common data type
+func (JSONObject) GormDataType() string {
+	return "jsonObject"
 }
 
 func (Model) Tidy(tx *gorm.DB) error {
