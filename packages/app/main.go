@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/rep2recall/rep2recall/db"
 	"github.com/thatisuday/commando"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -59,6 +61,8 @@ func main() {
 		AddArgument("dir...", "directory or YAML to scan for IDs, or none to use the whole database", "."). // not required
 		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                     // not required
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
+			database := db.Connect()
+
 			fmt.Printf("Printing options of the `clean` command...\n\n")
 
 			// print arguments
@@ -70,6 +74,42 @@ func main() {
 			for k, v := range flags {
 				fmt.Printf("flag -> %v: %v(%T)\n", k, v.Value, v.Value)
 			}
+
+			database.Transaction(func(tx *gorm.DB) error {
+				if e := (db.Card{}).Tidy(tx); e != nil {
+					return e
+				}
+
+				if e := (db.Note{}).Tidy(tx); e != nil {
+					return e
+				}
+
+				if e := (db.Template{}).Tidy(tx); e != nil {
+					return e
+				}
+
+				if e := (db.Model{}).Tidy(tx); e != nil {
+					return e
+				}
+
+				if r := tx.Unscoped().Delete(db.Card{}); r.Error != nil {
+					return r.Error
+				}
+
+				if r := tx.Unscoped().Delete(db.Note{}); r.Error != nil {
+					return r.Error
+				}
+
+				if r := tx.Unscoped().Delete(db.Template{}); r.Error != nil {
+					return r.Error
+				}
+
+				if r := tx.Unscoped().Delete(db.Model{}); r.Error != nil {
+					return r.Error
+				}
+
+				return nil
+			})
 		})
 
 	commando.

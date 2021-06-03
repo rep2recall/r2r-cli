@@ -1,0 +1,7 @@
+build:
+  command: |
+    go build --tags "{{ .buildTags }}" -o {{ .exe }}
+
+variables:
+  buildTags: sqlite_fts5 sqlite_json1
+  exe: '"$([ $(go env GOOS) = "windows" ] && echo "rep2recall.exe" || echo "rep2recall")"'
