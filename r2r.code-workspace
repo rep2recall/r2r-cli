@@ -1,6 +1,9 @@
 {
     "folders": [
         {
+            "path": "packages/app"
+        },
+        {
             "path": "packages/deno"
         },
         {
