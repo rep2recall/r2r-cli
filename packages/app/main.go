@@ -7,6 +7,7 @@ import (
 	"github.com/rep2recall/rep2recall/browser"
 	"github.com/rep2recall/rep2recall/db"
 	"github.com/rep2recall/rep2recall/server"
+	"github.com/rep2recall/rep2recall/shared"
 	"github.com/thatisuday/commando"
 	"gorm.io/gorm"
 )
@@ -74,7 +75,7 @@ func main() {
 				b := browser.Browser{
 					ExecPath: browserOfChoice,
 				}
-				b.AppMode(fmt.Sprintf("http://localhost:%d", port), browser.IsMaximized())
+				b.AppMode(fmt.Sprintf("http://localhost:%d/app.html?secret=%s", port, shared.ServerSecret()), browser.IsMaximized())
 
 				s.Close()
 			}
@@ -245,7 +246,7 @@ func main() {
 			b := browser.Browser{
 				ExecPath: browserOfChoice,
 			}
-			b.AppMode(fmt.Sprintf("http://localhost:%d/quiz.html", port), browser.IsMaximized())
+			b.AppMode(fmt.Sprintf("http://localhost:%d/quiz.html?scret=%s", port, shared.ServerSecret()), browser.IsMaximized())
 
 			s.Close()
 		})

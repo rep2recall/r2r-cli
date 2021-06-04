@@ -4,3 +4,6 @@
 /data.db
 /data.db-*
 /public/
+/server.log
+/.env
+/.env.*

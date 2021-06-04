@@ -16,7 +16,6 @@ import (
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/rep2recall/rep2recall/db"
 	"github.com/rep2recall/rep2recall/shared"
 	"gorm.io/gorm"
@@ -40,10 +39,11 @@ func Serve(opts ServerOptions) Server {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	f, _ := os.Create(filepath.Join(shared.ExecDir, "gin.log"))
+	f, _ := os.Create(filepath.Join(shared.ExecDir, "server.log"))
 	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
 	app := gin.New()
+	shared.ServerSecret()
 
 	r := Server{
 		DB:     db.Connect(),
@@ -94,7 +94,11 @@ func Serve(opts ServerOptions) Server {
 
 	csrfToken := ""
 	if !opts.Proxy {
-		csrfToken = uuid.NewString()
+		s, e := shared.GenerateRandomString(32)
+		if e != nil {
+			panic(e)
+		}
+		csrfToken = s
 	}
 
 	app.Use(func(c *gin.Context) {
@@ -112,6 +116,18 @@ func Serve(opts ServerOptions) Server {
 	app.GET("/server/config", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
 			"ready": true,
+		})
+	})
+
+	app.POST("/server/login", func(c *gin.Context) {
+		xSecret := c.GetHeader("X-Secret")
+		if xSecret != shared.ServerSecret() {
+			c.AbortWithStatusJSON(401, gin.H{})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"ok": true,
 		})
 	})
 

@@ -21,7 +21,7 @@ module.exports = {
   },
   routes: [
     {
-      src: '/api/.*',
+      src: '/(api|server)/.*',
       dest: (req, res) => {
         return require('http2-proxy').web(req, res, {
           hostname: 'localhost',

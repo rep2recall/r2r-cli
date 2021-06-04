@@ -9,6 +9,7 @@
     "build": "snowpack build"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "eta": "^1.12.1"
   },
   "devDependencies": {

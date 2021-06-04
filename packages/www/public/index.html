@@ -5,8 +5,37 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rep2recall</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      form[action] {
+        text-align: center;
+      }
+    </style>
   </head>
   <body>
-    <script src="/eta.js" type="module"></script>
+    <form action="/app.html" method="get">
+      <input
+        type="password"
+        name="secret"
+        id="secret"
+        placeholder="Please type-in server secret"
+      />
+      <button type="submit">Submit</button>
+    </form>
   </body>
 </html>
