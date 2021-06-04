@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"io"
 	"log"
-	"os"
 )
 
 func init() {
@@ -44,7 +43,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 // number generator fails to function correctly, in which
 // case the caller should not continue.
 func GenerateRandomString(n int) (string, error) {
-	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	bytes, err := GenerateRandomBytes(n)
 	if err != nil {
 		return "", err
@@ -55,20 +54,12 @@ func GenerateRandomString(n int) (string, error) {
 	return string(bytes), nil
 }
 
-var serverSecret string
-
 func ServerSecret() string {
-	if serverSecret != "" {
-		os.Setenv("SECRET", serverSecret)
-		return serverSecret
-	}
-
-	serverSecret = GetenvOrSetDefaultFn("SECRET", func() string {
+	return GetenvOrSetDefaultFn("SECRET", func() string {
 		s, e := GenerateRandomString(32)
 		if e != nil {
 			panic(e)
 		}
 		return s
 	})
-	return serverSecret
 }

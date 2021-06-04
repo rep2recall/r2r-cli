@@ -3,7 +3,7 @@ import axios from 'axios'
 export const api = axios.create()
 
 api.interceptors.response.use(undefined, async (r) => {
-    if ([401, 403].includes(r.statusCode)) {
+    if ([401, 403].includes(r.response.status)) {
         location.href = '/'
     }
 

@@ -25,17 +25,31 @@
       form[action] {
         text-align: center;
       }
+
+      input[type='password'] {
+        background-color: rgba(211, 211, 211, 0.3);
+      }
+
+      input::placeholder {
+        color: black !important;
+      }
     </style>
   </head>
   <body>
-    <form action="/app.html" method="get">
-      <input
-        type="password"
-        name="secret"
-        id="secret"
-        placeholder="Please type-in server secret"
-      />
-      <button type="submit">Submit</button>
+    <form class="field has-addons" action="/app.html" method="get">
+      <div class="control">
+        <input
+          class="input"
+          type="password"
+          name="secret"
+          id="secret"
+          placeholder="Please type-in server secret"
+        />
+      </div>
+      <div class="control">
+        <button class="button is-primary" type="submit">Submit</button>
+      </div>
     </form>
+    <script src="/styles.js" type="module"></script>
   </body>
 </html>
