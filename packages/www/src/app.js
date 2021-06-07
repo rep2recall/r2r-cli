@@ -1,5 +1,6 @@
-import { initAPI } from './assets/api'
+import { createApp } from 'vue'
+import Init from './Init.vue'
 
-initAPI().then(() => {
-    document.querySelector('#App').innerText = 'Logged in'
-})
+createApp(Init, {
+  type: 'App'
+}).mount('#App')
