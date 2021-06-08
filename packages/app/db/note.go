@@ -80,7 +80,7 @@ func (j NoteData) Value() (driver.Value, error) {
 
 func (j NoteData) Get() (interface{}, error) {
 	b := []byte(j.Raw)
-	if regexp.MustCompile("^{.+}$").Match(b) {
+	if regexp.MustCompile(`^({.+}|\[.+\])$`).Match(b) {
 		var out interface{}
 		e := json.Unmarshal(b, &out)
 		return out, e

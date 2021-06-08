@@ -18,6 +18,8 @@ export async function initAPI() {
     api.defaults.headers['X-Secret'] = secret
   }
 
-  const { data } = await api.post('/server/login')
+  const { data } = await api.post<{
+    ok?: boolean
+  }>('/server/login')
   return data
 }

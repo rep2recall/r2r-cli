@@ -64,7 +64,7 @@ template:
     front: |
       <ul>
         <% it.english.map(r => { %>
-          <li> <%= r %> <li>
+          <li> <%= r %> </li>
         <% }) %>
       </ul>
 note:

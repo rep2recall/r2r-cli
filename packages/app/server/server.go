@@ -1,30 +1,29 @@
 package server
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/contrib/static"
-	"github.com/gin-gonic/gin"
-	"github.com/rep2recall/rep2recall/db"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/csrf"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/rep2recall/rep2recall/server/api"
 	"github.com/rep2recall/rep2recall/shared"
 	"gorm.io/gorm"
 )
 
 type Server struct {
 	DB     *gorm.DB
-	Engine *gin.Engine
-	Server *http.Server
+	Engine *fiber.App
+	Server net.Listener
 	port   int
 }
 
@@ -35,113 +34,110 @@ type ServerOptions struct {
 }
 
 func Serve(opts ServerOptions) Server {
-	if !opts.Debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
 	f, _ := os.Create(filepath.Join(shared.ExecDir, "server.log"))
-	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
-	app := gin.New()
+	app := fiber.New()
 	shared.ServerSecret()
 
 	r := Server{
-		DB:     db.Connect(),
 		Engine: app,
 		port:   opts.Port,
 	}
 
-	app.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		ps := strings.SplitN(param.Path, "?", 2)
-		path := ps[0]
-		if len(ps) > 1 {
-			q, e := url.QueryUnescape(ps[1])
-			if e != nil {
-				path += "?" + ps[1]
-			} else {
-				path += "?" + q
+	app.Static("/", filepath.Join(shared.ExecDir, "public"))
+
+	app.Use(recover.New())
+
+	app.Use(logger.New(logger.Config{
+		Next: func(c *fiber.Ctx) bool {
+			body := c.Body()
+			prettyBody := ""
+			if len(body) > 0 {
+				prettyBody = func() string {
+					var str map[string]interface{}
+					if e := json.Unmarshal(body, &str); e != nil {
+						log.New(os.Stderr, "", log.LstdFlags).Println(e)
+						return ""
+					}
+
+					b, e := json.MarshalIndent(str, "", "  ")
+					if e != nil {
+						log.New(os.Stderr, "", log.LstdFlags).Println(e)
+						return ""
+					}
+
+					return string(b)
+				}()
 			}
-		}
 
-		out := []string{"[" + param.TimeStamp.Format(time.RFC3339) + "]"}
-		out = append(out, param.Method)
-		out = append(out, strconv.Itoa(param.StatusCode))
-		out = append(out, param.Latency.String())
-		out = append(out, path)
+			if prettyBody != "" {
+				log.Printf("body: %s", prettyBody)
+			}
 
-		if param.ErrorMessage != "" {
-			out = append(out, param.ErrorMessage)
-		}
-
-		out = append(out, "\n")
-
-		return strings.Join(out, " ")
+			return false
+		},
 	}))
-	app.Use(gin.Recovery())
+	app.Use(logger.New(logger.Config{
+		Output: f,
+		Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams} ${body} ${resBody}\n",
+	}))
 
-	app.Use(func(c *gin.Context) {
-		b, _ := ioutil.ReadAll(c.Request.Body)
-
-		if len(b) > 0 {
-			c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-
-			gin.DefaultWriter.Write([]byte(c.Request.Method + " " + c.Request.URL.Path + " body: "))
-			gin.DefaultWriter.Write(b)
-			gin.DefaultWriter.Write([]byte("\n"))
-		}
-		c.Next()
-	})
-
-	csrfToken := ""
 	if !opts.Proxy {
-		s, e := shared.GenerateRandomString(32)
-		if e != nil {
-			panic(e)
-		}
-		csrfToken = s
+		app.Use(csrf.New(csrf.Config{
+			Next: func(c *fiber.Ctx) bool {
+				return strings.HasPrefix(c.Path(), "/server/")
+			},
+			KeyLookup:  "cookie:_csrf",
+			CookieName: "_csrf",
+		}))
 	}
 
-	app.Use(func(c *gin.Context) {
-		if c.Request.Method == "GET" {
-			if csrfToken != "" {
-				c.SetCookie("csrf_token", csrfToken, 2592000, "/", "localhost", false, true)
-			}
+	apiSrv := app.Group("/server")
 
-			static.Serve("/", static.LocalFile(filepath.Join(shared.ExecDir, "public"), true))(c)
-			return
-		}
-		c.Next()
-	})
-
-	app.GET("/server/config", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{
+	apiSrv.Get("/config", func(ctx *fiber.Ctx) error {
+		return ctx.JSON(map[string]interface{}{
 			"ready": true,
 		})
 	})
 
-	app.POST("/server/login", func(c *gin.Context) {
-		xSecret := c.GetHeader("X-Secret")
-		if xSecret != shared.ServerSecret() {
-			c.AbortWithStatusJSON(401, gin.H{})
-			return
+	checkSecret := func(ctx *fiber.Ctx) bool {
+		xSecret := ctx.Get("X-Secret")
+		return xSecret == shared.ServerSecret()
+	}
+
+	apiSrv.Post("/login", func(ctx *fiber.Ctx) error {
+		if !checkSecret(ctx) {
+			return fiber.ErrUnauthorized
 		}
 
-		c.JSON(200, gin.H{
+		return ctx.JSON(map[string]interface{}{
 			"ok": true,
 		})
 	})
 
-	// apiRouter := app.Group("/api")
+	apiRouter := api.Router{
+		Router: app.Group("/api", func(ctx *fiber.Ctx) error {
+			if !checkSecret(ctx) {
+				return fiber.ErrUnauthorized
+			}
 
-	fmt.Printf("Server running at http://localhost:%d\n", opts.Port)
-
-	r.Server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", opts.Port),
-		Handler: app,
+			return ctx.Next()
+		}),
 	}
+	apiRouter.Init()
+
+	r.DB = apiRouter.DB
+
+	log.Printf("Server running at http://localhost:%d\n", opts.Port)
+
+	listener, e := net.Listen("tcp", fmt.Sprintf(":%d", opts.Port))
+	if e != nil {
+		log.Fatalln(e)
+	}
+	r.Server = listener
 
 	go func() {
-		if err := r.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := app.Listener(listener); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
@@ -162,6 +158,9 @@ func (s Server) WaitUntilReady() {
 }
 
 func (s Server) Close() {
-	s.DB.Commit()
+	if s.DB != nil {
+		s.DB.Commit()
+	}
+
 	s.Server.Close()
 }

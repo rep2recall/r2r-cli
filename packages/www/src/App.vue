@@ -63,9 +63,9 @@
         <div class="columns" style="flex-wrap: wrap">
           <div class="column is-4" v-for="id in leechItems" :key="id">
             <iframe
-              :src="'/item.html?id=' + id"
+              :src="`/item.html?side=front&id=${id}&secret=${secret}`"
               style="height: 200px; width: 100%; border: 1px solid lightgray"
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-same-origin allow-forms"
             ></iframe>
           </div>
 
@@ -80,6 +80,8 @@
 import { ref, watch, defineComponent } from 'vue'
 import { makeUseInfiniteScroll } from 'vue-use-infinite-scroll'
 
+import { api } from './assets/api'
+
 export default defineComponent({
   setup() {
     const q = ref(
@@ -93,22 +95,30 @@ export default defineComponent({
       due: 0,
       leech: 0,
     })
-    const leechItems = ref([])
+    const leechItems = ref([] as string[])
     const isLeechOpen = ref(false)
 
     const useInfiniteScroll = makeUseInfiniteScroll({})
-    const scrollTrigger = ref<HTMLElement>(null)
+    const scrollTrigger = ref(null as any)
     const scrollRef = useInfiniteScroll(scrollTrigger)
 
     watch(
       scrollRef,
-      (p) => {
-        leechItems.value = [
-          ...leechItems.value,
-          ...Array(6)
-            .fill(null)
-            .map(() => new Date().toISOString()),
-        ]
+      (page) => {
+        const limit = 6
+
+        api
+          .get<{
+            result: string[]
+          }>('/api/leech', {
+            params: {
+              page,
+              limit,
+            },
+          })
+          .then(({ data }) => {
+            leechItems.value = [...leechItems.value, ...data.result]
+          })
       },
       { immediate: true }
     )
@@ -129,6 +139,7 @@ export default defineComponent({
       leechItems,
       scrollTrigger,
       isLeechOpen,
+      secret: new URL(location.href).searchParams.get('secret'),
     }
   },
 })

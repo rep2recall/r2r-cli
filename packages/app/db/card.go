@@ -17,7 +17,6 @@ type Card struct {
 	Template   Template `gorm:"constraint:OnDelete:CASCADE"`
 
 	NoteID string `gorm:"index"`
-	Note   Note   `gorm:"constraint:OnDelete:CASCADE"`
 
 	Tag         string `gorm:"index"`
 	Front       string
@@ -32,6 +31,12 @@ type Card struct {
 	MaxWrong    int          `gorm:"index"`
 	RightStreak int          `gorm:"index"`
 	WrongStreak int          `gorm:"index"`
+}
+
+func (c Card) Notes(tx *gorm.DB) ([]Note, error) {
+	var notes []Note
+	r := tx.Where("id = ?", c.NoteID).Find(&notes)
+	return notes, r.Error
 }
 
 func (Card) Tidy(tx *gorm.DB) error {

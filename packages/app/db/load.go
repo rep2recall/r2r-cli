@@ -121,6 +121,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			Front:   t.Front,
 			Back:    t.Back,
 			Shared:  t.Shared,
+			If:      t.If,
 		}); r.Error != nil {
 			return r.Error
 		}
@@ -271,7 +272,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		If       string
 		Model    Model
 		Template Template
-		Note     Note
+		NoteID   string
+		Note     map[string]interface{}
 	}
 	cardToCompile := make(map[string]cardPre)
 	modelMap := make(map[string]Model)
@@ -308,9 +310,24 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 				templateMap[tid] = template
 			}
 
+			noteMap := map[string]map[string]interface{}{}
+
 			for _, n := range notes {
+				if noteMap[n.ID] == nil {
+					noteMap[n.ID] = map[string]interface{}{}
+				}
+
+				v, e := n.Data.Get()
+				if e != nil {
+					return e
+				}
+				noteMap[n.ID][n.Key] = v
+			}
+
+			for nid, n := range noteMap {
 				cardToCompile[uuid.New().String()] = cardPre{
 					If:       t.If,
+					NoteID:   nid,
 					Note:     n,
 					Model:    model,
 					Template: template,
@@ -326,7 +343,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			if e != nil {
 				return e
 			}
-			datab, e := json.Marshal(ca.Note.Data)
+			datab, e := json.Marshal(ca.Note)
 			if e != nil {
 				return e
 			}
@@ -339,10 +356,10 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 				JS: fmt.Sprintf(
 					`(async function() {
 					const data = %s;
-					await Eta.renderAsync(%s, data);
+					const rendered = await Eta.renderAsync(%s, data).then(r => !!JSON.parse(r)).catch(() => false);
 					return {
 						id: %s,
-						data
+						rendered,
 					};
 				})();`,
 					string(datab),
@@ -363,7 +380,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		for _, g := range toGenerate {
 			out := g.Output.(map[string]interface{})
 			c := cardToCompile[out["id"].(string)]
-			if out["data"].(bool) {
+
+			if out["rendered"].(bool) {
 				c.If = "true"
 			} else {
 				c.If = "false"
@@ -377,15 +395,15 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 				Create(&Card{
 					ID:         id,
 					TemplateID: ca.Template.ID,
-					NoteID:     ca.Note.ID,
+					NoteID:     ca.NoteID,
 				}); r.Error != nil {
 				return r.Error
 			}
-		} else if ca.Template.ID != "" && ca.Note.ID != "" {
+		} else if ca.Template.ID != "" && ca.NoteID != "" {
 			if r := tx.
 				Delete(&Card{
 					TemplateID: ca.Template.ID,
-					NoteID:     ca.Note.ID,
+					NoteID:     ca.NoteID,
 				}); r.Error != nil {
 				return r.Error
 			}
