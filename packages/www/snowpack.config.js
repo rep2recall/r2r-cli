@@ -15,7 +15,7 @@ module.exports = {
     /* ... */
   },
   devOptions: {
-    /* ... */
+    open: "none"
   },
   buildOptions: {
     out: '../app/public'

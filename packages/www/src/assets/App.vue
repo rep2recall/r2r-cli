@@ -1,11 +1,101 @@
 <template>
   <div class="container">
-    <form id="Filter" class="field has-addons mt-4" @submit.prevent="doFilter">
-      <div class="control is-expanded">
-        <input type="search" class="input" name="q" v-model="q" />
+    <form id="Filter" @submit.prevent="doFilter">
+      <div class="field has-addons mt-4">
+        <div class="control is-expanded">
+          <input type="search" class="input" name="q" v-model="q" />
+        </div>
+        <div class="control">
+          <button class="button is-primary" type="submit">Filter</button>
+        </div>
       </div>
-      <div class="control">
-        <button class="button is-primary" type="submit">Filter</button>
+
+      <div
+        class="mx-4"
+        style="display: flex; flex-direction: row; justify-content: center"
+      >
+        <div class="field">
+          <div class="control">
+            <label class="radio">
+              <input
+                type="checkbox"
+                name="learning"
+                :checked="state.includes('new')"
+                @change="
+                  (ev) =>
+                    (state = ev.target.checked
+                      ? [...state, 'new']
+                      : state.filter((r) => r !== 'new'))
+                "
+              />
+              New
+            </label>
+            <label class="radio">
+              <input
+                type="checkbox"
+                name="learning"
+                :checked="state.includes('learning')"
+                @change="
+                  (ev) =>
+                    (state = ev.target.checked
+                      ? [...state, 'learning']
+                      : state.filter((r) => r !== 'learning'))
+                "
+              />
+              Learning
+            </label>
+            <label class="radio">
+              <input
+                type="checkbox"
+                name="learning"
+                :checked="state.includes('graduated')"
+                @change="
+                  (ev) =>
+                    (state = ev.target.checked
+                      ? [...state, 'graduated']
+                      : state.filter((r) => r !== 'graduated'))
+                "
+              />
+              Graduated
+            </label>
+          </div>
+        </div>
+
+        <div style="width: 5em"></div>
+
+        <div class="field">
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              :checked="!state.includes('due')"
+              @change="
+                (ev) =>
+                  (state = !ev.target.checked
+                    ? [...state, 'due']
+                    : state.filter((r) => r !== 'due'))
+              "
+            />
+            Include undue
+          </label>
+        </div>
+
+        <div style="width: 5em"></div>
+
+        <div class="field">
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              :checked="state.includes('leech')"
+              @change="
+                (ev) =>
+                  (state = ev.target.checked
+                    ? [...state, 'leech']
+                    : state.filter((r) => r !== 'leech'))
+              "
+            />
+            Include leeches
+          </label>
+        </div>
       </div>
     </form>
 
@@ -18,21 +108,21 @@
         <div class="columns">
           <div class="column is-4">
             <label for="new">New:</label>
-            <span name="new">
-              {{ stat.new }}
-            </span>
+            <div data-stat name="new">
+              {{ stat.new.toLocaleString() }}
+            </div>
           </div>
           <div class="column is-4">
             <label for="due">Due:</label>
-            <span name="due">
-              {{ stat.due }}
-            </span>
+            <div data-stat name="due">
+              {{ stat.due.toLocaleString() }}
+            </div>
           </div>
           <div class="column is-4">
             <label for="leech">Leech:</label>
-            <span name="leech">
-              {{ stat.leech }}
-            </span>
+            <div data-stat name="leech">
+              {{ stat.leech.toLocaleString() }}
+            </div>
           </div>
         </div>
 
@@ -45,14 +135,14 @@
     </div>
 
     <div id="Leech" class="card mt-4" v-show="leechItems.length">
-      <header class="card-header">
+      <header
+        class="card-header"
+        @click="isLeechOpen = !isLeechOpen"
+        style="cursor: pointer"
+      >
         <h2 class="card-header-title">Leeches</h2>
         <div class="card-header-icon">
-          <button
-            class="delete"
-            type="button"
-            @click="isLeechOpen = !isLeechOpen"
-          ></button>
+          <button class="delete" type="button"></button>
         </div>
       </header>
       <div
@@ -77,7 +167,7 @@
 </template>
 
 <script lang="ts">
-import { ref, watch, defineComponent } from 'vue'
+import { ref, watch, defineComponent, onBeforeMount } from 'vue'
 import { makeUseInfiniteScroll } from 'vue-use-infinite-scroll'
 
 import { api } from './api'
@@ -90,6 +180,8 @@ export default defineComponent({
         return u.searchParams.get('q') || ''
       })()
     )
+    const state = ref(['new', 'learning', 'due'])
+
     const stat = ref({
       new: 0,
       due: 0,
@@ -110,7 +202,7 @@ export default defineComponent({
         api
           .get<{
             result: string[]
-          }>('/api/leech', {
+          }>('/api/quiz/leech', {
             params: {
               page,
               limit,
@@ -126,15 +218,39 @@ export default defineComponent({
 
     const doFilter = () => {
       leechItems.value = []
-      scrollRef.value = 1
+      scrollRef.value = Number(!!scrollRef.value)
+
+      api
+        .get<{
+          new: number
+          due: number
+          leech: number
+        }>('/api/quiz/stat', {
+          params: {
+            q: q.value,
+            state: state.value.join(','),
+          },
+        })
+        .then(({ data }) => {
+          stat.value = data
+        })
     }
 
     const doQuiz = () => {
       console.log('Quizzing', q.value)
     }
 
+    onBeforeMount(() => {
+      doFilter()
+    })
+
+    watch(state, () => {
+      doFilter()
+    })
+
     return {
       q,
+      state,
       doFilter,
       stat,
       doQuiz,
@@ -155,6 +271,16 @@ export default defineComponent({
 
   .columns {
     margin: 0;
+  }
+
+  [data-stat] {
+    display: inline-block;
+    width: 1.5em;
+    text-align: right;
+
+    label + & {
+      margin-left: 0.5em;
+    }
   }
 }
 </style>
