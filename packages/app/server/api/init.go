@@ -49,7 +49,7 @@ func (r *Router) Init() {
 		return c.JSON(out)
 	})
 
-	r.Router.Get("/item", func(c *fiber.Ctx) error {
+	r.Router.Get("/card", func(c *fiber.Ctx) error {
 		type queryStruct struct {
 			ID   string `validate:"required,uuid"`
 			Side string `validate:"required,oneof=front back mnemonic"`

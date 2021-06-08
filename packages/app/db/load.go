@@ -356,10 +356,16 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 				JS: fmt.Sprintf(
 					`(async function() {
 					const data = %s;
-					const rendered = await Eta.renderAsync(%s, data).then(r => !!JSON.parse(r)).catch(() => false);
+					const base = %s;
+					const raw = await Eta.renderAsync(base, data);
 					return {
 						id: %s,
-						rendered,
+						rendered: (() => {
+							try {
+								return !!JSON.parse(raw);
+							} catch (e) {}
+							return false;
+						})(),
 					};
 				})();`,
 					string(datab),
@@ -386,6 +392,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			} else {
 				c.If = "false"
 			}
+
+			cardToCompile[out["id"].(string)] = c
 		}
 	}
 
@@ -401,10 +409,9 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			}
 		} else if ca.Template.ID != "" && ca.NoteID != "" {
 			if r := tx.
-				Delete(&Card{
-					TemplateID: ca.Template.ID,
-					NoteID:     ca.NoteID,
-				}); r.Error != nil {
+				Where("template_id = ?", ca.Template.ID).
+				Where("note_id = ?", ca.NoteID).
+				Delete(&Card{}); r.Error != nil {
 				return r.Error
 			}
 		}

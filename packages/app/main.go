@@ -56,7 +56,7 @@ func main() {
 
 				forever := make(chan bool)
 
-				log.Printf("[+] To exit press CTRL+C")
+				log.Printf("[*] To exit press CTRL+C")
 				<-forever
 
 				s.Close()
@@ -102,7 +102,7 @@ func main() {
 
 			forever := make(chan bool)
 
-			log.Printf("[+] To exit press CTRL+C")
+			log.Printf("[*] To exit press CTRL+C")
 			<-forever
 
 			s.Close()

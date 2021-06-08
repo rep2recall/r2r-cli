@@ -6,23 +6,22 @@ initAPI().then(async ({ ok }) => {
   if (ok) {
     const query = new URL(location.href).searchParams
 
-    return api.get('/api/item', {
+    return api.get('/api/card', {
       params: {
         id: query.get('id'),
         side: query.get('side')
       }
     })
       .then(({ data: r }) => {
-        console.log(r)
-        return Eta.renderAsync(r.raw, r.data)
+        return Eta.renderAsync(r.raw, r.data).catch((e) => `<pre style="background-color: red">${e}\n${JSON.stringify(r, null, 2)}</pre>`)
       })
       .then((r) => {
-        document.querySelector('#Item').innerHTML = r
+        document.querySelector('#Card').innerHTML = r
       })
   }
 
   throw new Error('cannot login')
 }).catch((e) => {
-  document.querySelector('#Item').innerHTML = `<pre style="background-color: red">${e}</pre>`
+  document.querySelector('#Card').innerHTML = `<pre style="background-color: red">${e}</pre>`
   throw e
 })
