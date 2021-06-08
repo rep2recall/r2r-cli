@@ -114,6 +114,7 @@ export default defineComponent({
             params: {
               page,
               limit,
+              q: q.value,
             },
           })
           .then(({ data }) => {
@@ -124,7 +125,8 @@ export default defineComponent({
     )
 
     const doFilter = () => {
-      console.log('Filtering', q.value)
+      leechItems.value = []
+      scrollRef.value = 1
     }
 
     const doQuiz = () => {

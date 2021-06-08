@@ -16,9 +16,9 @@ func (r *Router) Init() {
 
 	r.Router.Get("/leech", func(c *fiber.Ctx) error {
 		type queryStruct struct {
-			Page   int `validate:"required,min=1"`
-			Limit  int `validate:"required,min=3"`
-			Filter string
+			Page  int `validate:"required,min=1"`
+			Limit int `validate:"required,min=3"`
+			Q     string
 		}
 
 		query := new(queryStruct)
@@ -27,11 +27,11 @@ func (r *Router) Init() {
 		}
 
 		var cards []db.Card
-		if rTx := r.DB.
+		if rTx := db.Search(r.DB, query.Q).
+			Where("card.wrong_streak > 1").
 			Limit(query.Limit).
 			Offset((query.Page - 1) * query.Limit).
-			Select("ID").
-			// Preload("Template").Preload("Template.Model").Preload("Notes").
+			Select("card.id").
 			Find(&cards); rTx.Error != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
 		}
@@ -75,19 +75,12 @@ func (r *Router) Init() {
 		out := new(outStruct)
 		out.Data = make(map[string]interface{})
 
-		notes, err := card.Notes(r.DB)
+		d, err := card.Data(r.DB)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
 
-		for _, n := range notes {
-			v, e := n.Data.Get()
-			if e != nil {
-				return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-			}
-
-			out.Data[n.Key] = v
-		}
+		out.Data = d
 
 		if query.Side != "mnemonic" {
 			out.Raw = func() string {

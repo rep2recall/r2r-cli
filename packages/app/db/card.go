@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	"gorm.io/gorm"
@@ -18,25 +17,41 @@ type Card struct {
 
 	NoteID string `gorm:"index"`
 
-	Tag         string `gorm:"index"`
 	Front       string
 	Back        string
 	Shared      string
 	Mnemonic    string
-	SRSLevel    int          `gorm:"index"`
-	NextReview  sql.NullTime `gorm:"index"`
-	LastRight   sql.NullTime `gorm:"index"`
-	LastWrong   sql.NullTime `gorm:"index"`
-	MaxRight    int          `gorm:"index"`
-	MaxWrong    int          `gorm:"index"`
-	RightStreak int          `gorm:"index"`
-	WrongStreak int          `gorm:"index"`
+	SRSLevel    int        `gorm:"index"`
+	NextReview  *time.Time `gorm:"index"`
+	LastRight   *time.Time `gorm:"index"`
+	LastWrong   *time.Time `gorm:"index"`
+	MaxRight    int        `gorm:"index"`
+	MaxWrong    int        `gorm:"index"`
+	RightStreak int        `gorm:"index"`
+	WrongStreak int        `gorm:"index"`
+	Tag         string     `gorm:"index"`
+	Status      string     `gorm:"index;->;type:TEXT AS (' '||IIF(next_review IS NULL, 'new', IIF(strftime('%s', next_review) < strftime('%s', 'now'), 'due', ''))||' '||IIF(wrong_streak > 1, 'leech', '')||' '||IIF(srs_level > 3, 'graduated', 'learning')||' ')"`
 }
 
-func (c Card) Notes(tx *gorm.DB) ([]Note, error) {
+func (c Card) Data(tx *gorm.DB) (map[string]interface{}, error) {
 	var notes []Note
 	r := tx.Where("id = ?", c.NoteID).Find(&notes)
-	return notes, r.Error
+	if r.Error != nil {
+		return nil, r.Error
+	}
+
+	out := map[string]interface{}{}
+
+	for _, n := range notes {
+		v, e := n.Data.Get()
+		if e != nil {
+			return nil, e
+		}
+
+		out[n.Key] = v
+	}
+
+	return out, nil
 }
 
 func (Card) Tidy(tx *gorm.DB) error {
