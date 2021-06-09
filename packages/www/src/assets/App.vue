@@ -6,7 +6,7 @@
           <input type="search" class="input" name="q" v-model="q" />
         </div>
         <div class="control">
-          <button class="button is-primary" type="submit">Filter</button>
+          <button class="button is-info" type="submit">Filter</button>
         </div>
       </div>
 
@@ -127,7 +127,7 @@
         </div>
 
         <form class="field" @submit.prevent="doQuiz">
-          <button name="quiz" class="button is-primary" type="button">
+          <button name="quiz" class="button is-success" type="submit">
             Quiz
           </button>
         </form>
@@ -163,6 +163,26 @@
         </div>
       </div>
     </div>
+
+    <div v-if="isQuiz" class="modal is-active">
+      <div class="modal-background"></div>
+      <div
+        class="modal-card"
+        style="width: 80vw; max-width: 1200px; height: 100%"
+      >
+        <header class="modal-card-head">
+          <p class="modal-card-title">Quiz</p>
+          <button
+            class="delete"
+            aria-label="close"
+            @click="isQuiz = false"
+          ></button>
+        </header>
+        <section class="modal-card-body" style="height: 100%">
+          <Quiz @end="isQuiz = false" />
+        </section>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -170,9 +190,13 @@
 import { ref, watch, defineComponent, onBeforeMount } from 'vue'
 import { makeUseInfiniteScroll } from 'vue-use-infinite-scroll'
 
+import Quiz from './Quiz.vue'
 import { api } from './api'
 
 export default defineComponent({
+  components: {
+    Quiz,
+  },
   setup() {
     const q = ref(
       (() => {
@@ -189,6 +213,7 @@ export default defineComponent({
     })
     const leechItems = ref([] as string[])
     const isLeechOpen = ref(false)
+    const isQuiz = ref(false)
 
     const useInfiniteScroll = makeUseInfiniteScroll({})
     const scrollTrigger = ref(null as any)
@@ -238,6 +263,7 @@ export default defineComponent({
 
     const doQuiz = () => {
       console.log('Quizzing', q.value)
+      isQuiz.value = true
     }
 
     onBeforeMount(() => {
@@ -257,6 +283,7 @@ export default defineComponent({
       leechItems,
       scrollTrigger,
       isLeechOpen,
+      isQuiz,
       secret: new URL(location.href).searchParams.get('secret'),
     }
   },

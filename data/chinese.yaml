@@ -12,7 +12,7 @@ model:
       <% if (it.english && it.english.length) { %><p>English: 
         <ul>
           <% it.english.map(r => { %>
-            <li> <%= r %> <li>
+            <li> <%= r %> </li>
           <% }) %>
         </ul>
       </p></p><% } %>
