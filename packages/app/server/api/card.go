@@ -104,4 +104,47 @@ func (r *Router) cardRouter() {
 
 		return c.JSON(out)
 	})
+
+	router.Patch("/dSrsLevel", func(c *fiber.Ctx) error {
+		type queryStruct struct {
+			ID        string `validate:"required,uuid"`
+			DSRSLevel int    `query:"dSrsLevel"`
+			Session   string `validate:"required,uuid"`
+		}
+
+		query := new(queryStruct)
+		if e := c.QueryParser(query); e != nil {
+			return fiber.NewError(fiber.StatusBadRequest, e.Error())
+		}
+
+		sess, err := r.Store.Get(c)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		quizSession := sess.Get(query.Session)
+		if quizSession == nil {
+			return fiber.ErrNotFound
+		}
+
+		card := db.Card{}
+		cards := quizSession.([]db.Card)
+		for _, c := range cards {
+			if c.ID == query.ID {
+				card = c
+			}
+		}
+
+		if card.ID == "" {
+			return fiber.ErrNotFound
+		}
+
+		if err := card.UpdateSRSLevel(r.DB, query.DSRSLevel); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(map[string]interface{}{
+			"updated": true,
+		})
+	})
 }

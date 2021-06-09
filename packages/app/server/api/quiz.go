@@ -1,19 +1,22 @@
 package api
 
 import (
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/rep2recall/rep2recall/db"
+	"gorm.io/gorm"
 )
 
 func (r *Router) quizRouter() {
 	router := r.Router.Group("/quiz")
 
-	router.Get("/stat", func(c *fiber.Ctx) error {
+	router.Get("/", func(c *fiber.Ctx) error {
 		type queryStruct struct {
-			Q     string
-			State string
+			Session string `validate:"required,uuid"`
 		}
 
 		query := new(queryStruct)
@@ -21,36 +24,73 @@ func (r *Router) quizRouter() {
 			return fiber.NewError(fiber.StatusBadRequest, e.Error())
 		}
 
-		rTx := db.Search(r.DB, query.Q)
-
-		rState := r.DB.Where("FALSE")
-		if len(query.State) > 0 {
-			for _, s := range strings.Split(query.State, ",") {
-				switch s {
-				case "new":
-					rState = rState.Or("card.next_review IS NULL")
-				case "learning":
-					rState = rState.Or("card.srs_level <= 3")
-				case "graduated":
-					rState = rState.Or("card.srs_level > 3")
-				case "leech":
-					rState = rState.Or("card.wrong_streak > 1")
-				}
-			}
-
-			for _, s := range strings.Split(query.State, ",") {
-				switch s {
-				case "due":
-					rState = rState.Where("strftime('%s', card.next_review) < strftime('%s', 'now')")
-				}
-			}
+		sess, err := r.Store.Get(c)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
 
-		var cards []db.Card
-		if rTx := rTx.Where(rState).
-			Select("card.status").
-			Find(&cards); rTx.Error != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
+		quizSession := sess.Get(query.Session)
+		if quizSession == nil {
+			return fiber.ErrNotFound
+		}
+
+		type outStruct struct {
+			CardIDs []string `json:"cardIds"`
+		}
+		out := outStruct{
+			CardIDs: make([]string, 0),
+		}
+
+		cards := quizSession.([]db.Card)
+		for _, c := range cards {
+			out.CardIDs = append(out.CardIDs, c.ID)
+		}
+
+		return c.JSON(out)
+	})
+
+	router.Post("/init", func(c *fiber.Ctx) error {
+		query := getCardStruct{}
+		if e := c.QueryParser(&query); e != nil {
+			return fiber.NewError(fiber.StatusBadRequest, e.Error())
+		}
+
+		cards, err := getCard(r.DB, query)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(cards), func(i, j int) {
+			cards[i], cards[j] = cards[j], cards[i]
+		})
+
+		sess, err := r.Store.Get(c)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		sessionID := uuid.NewString()
+		sess.Set(sessionID, cards)
+
+		type outStruct struct {
+			ID string `json:"id"`
+		}
+
+		return c.JSON(outStruct{
+			ID: sessionID,
+		})
+	})
+
+	router.Get("/stat", func(c *fiber.Ctx) error {
+		query := getCardStruct{}
+		if e := c.QueryParser(&query); e != nil {
+			return fiber.NewError(fiber.StatusBadRequest, e.Error())
+		}
+
+		cards, err := getCard(r.DB, query)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
 
 		type outStruct struct {
@@ -111,4 +151,44 @@ func (r *Router) quizRouter() {
 
 		return c.JSON(out)
 	})
+}
+
+type getCardStruct struct {
+	Q     string
+	State string
+}
+
+func getCard(tx *gorm.DB, query getCardStruct) ([]db.Card, error) {
+	rTx := db.Search(tx, query.Q)
+
+	rState := tx.Where("FALSE")
+	if len(query.State) > 0 {
+		for _, s := range strings.Split(query.State, ",") {
+			switch s {
+			case "new":
+				rState = rState.Or("card.next_review IS NULL")
+			case "learning":
+				rState = rState.Or("card.srs_level <= 3")
+			case "graduated":
+				rState = rState.Or("card.srs_level > 3")
+			case "leech":
+				rState = rState.Or("card.wrong_streak > 1")
+			}
+		}
+
+		for _, s := range strings.Split(query.State, ",") {
+			switch s {
+			case "due":
+				rState = rState.Where("strftime('%s', card.next_review) < strftime('%s', 'now')")
+			}
+		}
+	}
+
+	var cards []db.Card
+	if rTx := rTx.Where(rState).
+		Find(&cards); rTx.Error != nil {
+		return nil, rTx.Error
+	}
+
+	return cards, nil
 }
