@@ -34,7 +34,30 @@ type Card struct {
 	RightStreak int            `gorm:"index"`
 	WrongStreak int            `gorm:"index"`
 	Tag         SpaceSeparated `gorm:"index"`
-	Status      SpaceSeparated `gorm:"index;->;type:TEXT AS (' '||IIF(next_review IS NULL, 'new', IIF(strftime('%s', next_review) < strftime('%s', 'now'), 'due', ''))||' '||IIF(wrong_streak > 1, 'leech', '')||' '||IIF(srs_level > 3, 'graduated', 'learning')||' ')"`
+	Status      SpaceSeparated `gorm:"index;default:' new '"`
+}
+
+func (c *Card) BeforeSave(tx *gorm.DB) error {
+	status := map[string]bool{}
+	now := time.Now()
+
+	if c.NextReview == nil {
+		status["new"] = true
+	} else if c.NextReview.Before(now) {
+		status["due"] = true
+	}
+
+	if c.WrongStreak > 1 {
+		status["leech"] = true
+	}
+
+	if c.SRSLevel > 3 {
+		status["graduated"] = true
+	} else if c.NextReview != nil {
+		status["learning"] = true
+	}
+
+	return c.Status.Set(status)
 }
 
 type SpaceSeparated struct {
@@ -190,6 +213,6 @@ func (c Card) UpdateSRSLevel(tx *gorm.DB, dSRSLevel int) error {
 		q.NextReview = &nextReview
 	}
 
-	r := tx.Updates(&c)
+	r := tx.Updates(&q)
 	return r.Error
 }
