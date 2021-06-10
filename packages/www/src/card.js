@@ -17,6 +17,12 @@ initAPI().then(async ({ ok }) => {
       })
       .then((r) => {
         document.querySelector('#Card').innerHTML = r
+
+        document.querySelectorAll('#Card script').forEach((script) => {
+          const s = document.createElement('script')
+          s.innerHTML = script.innerHTML
+          script.replaceWith(s)
+        })
       })
   }
 

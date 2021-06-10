@@ -14,7 +14,7 @@ import (
 func (r *Router) quizRouter() {
 	router := r.Router.Group("/quiz")
 
-	router.Get("/", func(c *fiber.Ctx) error {
+	router.Get("/session", func(c *fiber.Ctx) error {
 		type queryStruct struct {
 			Session string `validate:"required,uuid"`
 		}
@@ -34,16 +34,29 @@ func (r *Router) quizRouter() {
 			return fiber.ErrNotFound
 		}
 
+		type cardStruct struct {
+			ID       string `json:"id"`
+			IsMarked bool   `json:"isMarked"`
+		}
+
 		type outStruct struct {
-			CardIDs []string `json:"cardIds"`
+			Result []cardStruct `json:"result"`
 		}
 		out := outStruct{
-			CardIDs: make([]string, 0),
+			Result: make([]cardStruct, 0),
 		}
 
 		cards := quizSession.([]db.Card)
 		for _, c := range cards {
-			out.CardIDs = append(out.CardIDs, c.ID)
+			tag, err := c.Tag.Get()
+			if err != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+			}
+
+			out.Result = append(out.Result, cardStruct{
+				ID:       c.ID,
+				IsMarked: tag["marked"],
+			})
 		}
 
 		return c.JSON(out)
@@ -72,6 +85,9 @@ func (r *Router) quizRouter() {
 
 		sessionID := uuid.NewString()
 		sess.Set(sessionID, cards)
+		if err := sess.Save(); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
 
 		type outStruct struct {
 			ID string `json:"id"`
@@ -101,15 +117,20 @@ func (r *Router) quizRouter() {
 		out := outStruct{}
 
 		for _, c := range cards {
-			if strings.Contains(c.Status, "new") {
+			status, err := c.Status.Get()
+			if err != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+			}
+
+			if status["new"] {
 				out.New += 1
 			}
 
-			if strings.Contains(c.Status, "due") {
+			if status["due"] {
 				out.Due += 1
 			}
 
-			if strings.Contains(c.Status, "leech") {
+			if status["leech"] {
 				out.Leech += 1
 			}
 		}

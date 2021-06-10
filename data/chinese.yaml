@@ -3,9 +3,9 @@ model:
     name: Chinese vocab
     back: |
       <% if (it.simplified) { %>
-        <p>Simplified: <%= it.simplified %> <tts chinese="<%= it.chinese %>" /></p>
+        <p>Simplified: <span class="clickable" onclick="speak(innerText)"> <%= it.simplified %> </span></p>
       <% } else { %>
-        <p>Chinese: <%= it.chinese %> <tts chinese="<%= it.chinese %>" /></p>
+        <p>Chinese: <span class="clickable" onclick="speak(innerText)"> <%= it.chinese %> </span></p>
       <% } %>
       <% if (it.traditional && it.traditional.length) { %><p>Traditional: <%= it.traditional.join(' | ') %></p><% } %>
       <p>Reading: <%= it.pinyin.join(' / ') %></p>
@@ -22,7 +22,56 @@ model:
         font-weight: normal;
         font-family: 'Noto Sans CJK SC';
       }
+
+      .clickable {
+        cursor: pointer;
+      }
+      .clickable:hover {
+        color: blue;
+      }
       </style>
+
+      <script>
+      (() => {
+        const allVoices = {}
+        
+        window.speak = (s) => {
+          if (Object.keys(allVoices).length === 0) {
+            // eslint-disable-next-line array-callback-return
+            window.speechSynthesis.getVoices().map((v) => {
+              allVoices[v.lang] = v.lang
+            })
+
+            window.speechSynthesis.onvoiceschanged = () => {
+              // eslint-disable-next-line array-callback-return
+              window.speechSynthesis.getVoices().map((v) => {
+                allVoices[v.lang] = v.lang
+              })
+            }
+          }
+
+          const voices = Object.keys(allVoices)
+          const stage1 = () => voices.filter((v) => v === 'zh' || v === 'cmn')[0]
+          const stage2 = () => {
+            return voices.filter((v) => /^zh[-_]?/i.test(v))[0]
+          }
+
+          const lang = stage1() || stage2() || ''
+
+          if (lang) {
+            const utterance = new window.SpeechSynthesisUtterance(s)
+            utterance.lang = lang
+            window.speechSynthesis.speak(utterance)
+
+            return new Promise((resolve) => {
+              utterance.onend = () => {
+                resolve()
+              }
+            })
+          }
+        }
+      })()
+      </script>
     generated:
       _: |
         <%

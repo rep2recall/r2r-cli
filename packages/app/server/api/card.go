@@ -147,4 +147,41 @@ func (r *Router) cardRouter() {
 			"updated": true,
 		})
 	})
+
+	router.Patch("/toggleMarked", func(c *fiber.Ctx) error {
+		type queryStruct struct {
+			ID string `validate:"required,uuid"`
+		}
+
+		query := new(queryStruct)
+		if e := c.QueryParser(query); e != nil {
+			return fiber.NewError(fiber.StatusBadRequest, e.Error())
+		}
+
+		var card db.Card
+		if rTx := r.DB.
+			Where("id = ?", query.ID).
+			First(&card); rTx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
+		}
+
+		tag, err := card.Tag.Get()
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		tag["marked"] = !tag["marked"]
+		if err := card.Tag.Set(tag); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		if rTx := r.DB.
+			Updates(&card); rTx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(map[string]bool{
+			"isMarked": tag["marked"],
+		})
+	})
 }

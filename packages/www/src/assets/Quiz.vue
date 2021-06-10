@@ -104,7 +104,7 @@ import { api } from './api'
 export default defineComponent({
   props: ['session'],
   emits: ['end'],
-  setup() {
+  setup(props) {
     const side = ref('front')
     const index = ref(0)
     const cards = ref(
@@ -116,23 +116,54 @@ export default defineComponent({
     )
 
     const dSrsLevel = (df: number) => {
-      const c = cards.value[index.value]
+      const i = index.value
+      const c = cards.value[i]
       c.dSrsLevel = df
-      cards.value = [
-        ...cards.value.slice(0, index.value),
-        c,
-        ...cards.value.slice(index.value + 1),
-      ]
+
+      api
+        .patch('/api/card/dSrsLevel', undefined, {
+          params: {
+            id: c.id,
+            dSrsLevel: c.dSrsLevel,
+            session: props.session,
+          },
+        })
+        .then(() => {
+          cards.value = [
+            ...cards.value.slice(0, i),
+            c,
+            ...cards.value.slice(i + 1),
+          ]
+          side.value = 'front'
+
+          if (i < cards.value.length - 2) {
+            index.value = i + 1
+          }
+        })
     }
 
     const toggleMark = () => {
-      const c = cards.value[index.value]
+      const i = index.value
+      const c = cards.value[i]
       c.isMarked = !c.isMarked
-      cards.value = [
-        ...cards.value.slice(0, index.value),
-        c,
-        ...cards.value.slice(index.value + 1),
-      ]
+
+      api
+        .patch<{
+          isMarked: boolean
+        }>('/api/card/toggleMarked', undefined, {
+          params: {
+            id: c.id,
+          },
+        })
+        .then(({ data }) => {
+          c.isMarked = data.isMarked
+
+          cards.value = [
+            ...cards.value.slice(0, i),
+            c,
+            ...cards.value.slice(i + 1),
+          ]
+        })
     }
 
     const endQuiz = () => {
@@ -142,16 +173,17 @@ export default defineComponent({
     onMounted(() => {
       api
         .get<{
-          result: string[]
-        }>('/api/quiz/leech', {
+          result: {
+            id: string
+            isMarked: boolean
+          }[]
+        }>('/api/quiz/session', {
           params: {
-            page: 1,
-            limit: 5,
-            q: '',
+            session: props.session,
           },
         })
         .then(({ data }) => {
-          cards.value = data.result.map((id) => ({ id }))
+          cards.value = data.result
           index.value = 0
         })
     })

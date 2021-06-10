@@ -48,7 +48,7 @@ type loadedFile struct {
 		ID         string `validate:"required,uuid"`
 		TemplateID string `validate:"required,uuid" yaml:"templateId"`
 		NoteID     string `validate:"required,uuid" yaml:"noteId"`
-		Tag        string
+		Tag        []string
 		Front      string
 		Back       string
 		Shared     string
@@ -418,13 +418,35 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	}
 
 	for _, c := range loadFile.Card {
+		c0 := Card{}
+		if c.TemplateID != "" && c.NoteID != "" {
+			if r := tx.
+				Where("template_id = ?", c.TemplateID).
+				Where("note_id = ?", c.NoteID).
+				Delete(&c0); r.Error != nil {
+				return r.Error
+			}
+		}
+
+		tag, e := c0.Tag.Get()
+		if e != nil {
+			return e
+		}
+
+		for _, t := range c.Tag {
+			tag[t] = true
+		}
+		if e := c0.Tag.Set(tag); e != nil {
+			return e
+		}
+
 		if r := tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(&Card{
 			ID:         c.ID,
 			TemplateID: c.TemplateID,
 			NoteID:     c.NoteID,
-			Tag:        c.Tag,
+			Tag:        c0.Tag,
 			Front:      c.Front,
 			Back:       c.Back,
 			Shared:     c.Shared,

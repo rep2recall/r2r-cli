@@ -179,7 +179,15 @@
           ></button>
         </header>
         <section class="modal-card-body" style="height: 100%">
-          <Quiz @end="isQuiz = false" />
+          <Quiz
+            :session="sessionId"
+            @end="
+              () => {
+                isQuiz = false
+                doFilter()
+              }
+            "
+          />
         </section>
       </div>
     </div>
@@ -214,6 +222,7 @@ export default defineComponent({
     const leechItems = ref([] as string[])
     const isLeechOpen = ref(false)
     const isQuiz = ref(false)
+    const sessionId = ref('')
 
     const useInfiniteScroll = makeUseInfiniteScroll({})
     const scrollTrigger = ref(null as any)
@@ -262,8 +271,19 @@ export default defineComponent({
     }
 
     const doQuiz = () => {
-      console.log('Quizzing', q.value)
-      isQuiz.value = true
+      api
+        .post<{
+          id: string
+        }>('/api/quiz/init', undefined, {
+          params: {
+            q: q.value,
+            state: state.value.join(','),
+          },
+        })
+        .then(({ data }) => {
+          sessionId.value = data.id
+          isQuiz.value = true
+        })
     }
 
     onBeforeMount(() => {
@@ -284,6 +304,7 @@ export default defineComponent({
       scrollTrigger,
       isLeechOpen,
       isQuiz,
+      sessionId,
       secret: new URL(location.href).searchParams.get('secret'),
     }
   },

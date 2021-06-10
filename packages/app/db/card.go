@@ -1,6 +1,10 @@
 package db
 
 import (
+	"database/sql/driver"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -21,16 +25,71 @@ type Card struct {
 	Back        string
 	Shared      string
 	Mnemonic    string
-	SRSLevel    int        `gorm:"index"`
-	NextReview  *time.Time `gorm:"index"`
-	LastRight   *time.Time `gorm:"index"`
-	LastWrong   *time.Time `gorm:"index"`
-	MaxRight    int        `gorm:"index"`
-	MaxWrong    int        `gorm:"index"`
-	RightStreak int        `gorm:"index"`
-	WrongStreak int        `gorm:"index"`
-	Tag         string     `gorm:"index"`
-	Status      string     `gorm:"index;->;type:TEXT AS (' '||IIF(next_review IS NULL, 'new', IIF(strftime('%s', next_review) < strftime('%s', 'now'), 'due', ''))||' '||IIF(wrong_streak > 1, 'leech', '')||' '||IIF(srs_level > 3, 'graduated', 'learning')||' ')"`
+	SRSLevel    int            `gorm:"index"`
+	NextReview  *time.Time     `gorm:"index"`
+	LastRight   *time.Time     `gorm:"index"`
+	LastWrong   *time.Time     `gorm:"index"`
+	MaxRight    int            `gorm:"index"`
+	MaxWrong    int            `gorm:"index"`
+	RightStreak int            `gorm:"index"`
+	WrongStreak int            `gorm:"index"`
+	Tag         SpaceSeparated `gorm:"index"`
+	Status      SpaceSeparated `gorm:"index;->;type:TEXT AS (' '||IIF(next_review IS NULL, 'new', IIF(strftime('%s', next_review) < strftime('%s', 'now'), 'due', ''))||' '||IIF(wrong_streak > 1, 'leech', '')||' '||IIF(srs_level > 3, 'graduated', 'learning')||' ')"`
+}
+
+type SpaceSeparated struct {
+	Raw string
+}
+
+func (j *SpaceSeparated) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	s, ok := value.(string)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal SpaceSeparated value:", value))
+	}
+
+	j.Raw = s
+	return nil
+}
+
+func (j SpaceSeparated) Value() (driver.Value, error) {
+	return j.Raw, nil
+}
+
+func (j SpaceSeparated) Get() (map[string]bool, error) {
+	if j.Raw == "" {
+		return map[string]bool{}, nil
+	}
+
+	if len(j.Raw) < 2 || (j.Raw[0] != ' ' && j.Raw[len(j.Raw)-1] != ' ') {
+		return nil, errors.New(fmt.Sprint("Failed to unmarshal SpaceSeparated value:", j.Raw))
+	}
+
+	out := map[string]bool{}
+	for _, s := range strings.Split(j.Raw[1:len(j.Raw)-1], " ") {
+		out[s] = true
+	}
+
+	return out, nil
+}
+
+func (j *SpaceSeparated) Set(v map[string]bool) error {
+	if len(v) == 0 {
+		j.Raw = ""
+		return nil
+	}
+
+	out := " "
+	for k, v := range v {
+		if v {
+			out += k + " "
+		}
+	}
+	j.Raw = out
+	return nil
 }
 
 func (c Card) Data(tx *gorm.DB) (map[string]interface{}, error) {

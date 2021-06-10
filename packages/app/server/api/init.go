@@ -16,6 +16,7 @@ type Router struct {
 func (r *Router) Init() {
 	r.DB = db.Connect()
 	r.Store = session.New()
+	r.Store.RegisterType([]db.Card{})
 
 	r.quizRouter()
 	r.cardRouter()
