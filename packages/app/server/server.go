@@ -102,6 +102,10 @@ func Serve(opts ServerOptions) Server {
 
 	checkSecret := func(ctx *fiber.Ctx) bool {
 		xSecret := ctx.Get("X-Secret")
+		if xSecret == "" {
+			xSecret = ctx.Query("secret")
+		}
+
 		return xSecret == shared.ServerSecret()
 	}
 

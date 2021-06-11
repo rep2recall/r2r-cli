@@ -5,6 +5,9 @@ run:
   command: |
     robo build
     ./{{ .exe }} $@
+plugins:
+  command: |
+    go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
 
 variables:
   buildTags: sqlite_fts5 sqlite_json1

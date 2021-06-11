@@ -20,4 +20,5 @@ func (r *Router) Init() {
 
 	r.quizRouter()
 	r.cardRouter()
+	r.pluginRouter()
 }
