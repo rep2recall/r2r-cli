@@ -1,5 +1,5 @@
 <template>
-  <component :is="opts.type" v-if="opts.ok" :options="opts" />
+  <component :is="opts.type" v-if="opts.ok" v-bind="opts" />
   <div v-else>Loading...</div>
 </template>
 
@@ -10,6 +10,7 @@ import { initAPI } from './api'
 export default defineComponent({
   components: {
     App: defineAsyncComponent(() => import('./App.vue')),
+    Quiz: defineAsyncComponent(() => import('./Quiz.vue')),
   },
   props: ['type'],
   setup: (props) => {

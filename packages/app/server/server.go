@@ -8,11 +8,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/rep2recall/rep2recall/server/api"
@@ -81,16 +79,6 @@ func Serve(opts ServerOptions) Server {
 		Output: f,
 		Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams} ${body} ${resBody}\n",
 	}))
-
-	if !opts.Proxy {
-		app.Use(csrf.New(csrf.Config{
-			Next: func(c *fiber.Ctx) bool {
-				return strings.HasPrefix(c.Path(), "/server/")
-			},
-			KeyLookup:  "cookie:_csrf",
-			CookieName: "_csrf",
-		}))
-	}
 
 	apiSrv := app.Group("/server")
 

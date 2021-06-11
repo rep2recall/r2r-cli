@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 
 	"github.com/rep2recall/rep2recall/browser"
 	"github.com/rep2recall/rep2recall/db"
@@ -219,7 +220,8 @@ func main() {
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
 			port := defaultPort
 			debug := false
-			browserOfChoice := "."
+			browserOfChoice := ""
+			filter := ""
 
 			for k, v := range flags {
 				switch k {
@@ -228,7 +230,15 @@ func main() {
 				case "debug":
 					debug = v.Value.(bool)
 				case "browser":
-					browserOfChoice = v.Value.(string)
+					value := v.Value.(string)
+					if value != "." {
+						browserOfChoice = ""
+					}
+				case "filter":
+					value := v.Value.(string)
+					if value != "." {
+						filter = value
+					}
 				}
 			}
 
@@ -246,7 +256,10 @@ func main() {
 			b := browser.Browser{
 				ExecPath: browserOfChoice,
 			}
-			b.AppMode(fmt.Sprintf("http://localhost:%d/quiz.html?scret=%s", port, shared.ServerSecret()), browser.IsMaximized())
+			b.AppMode(
+				fmt.Sprintf("http://localhost:%d/quiz.html?secret=%s&q=%s", port, shared.ServerSecret(), url.QueryEscape(filter)),
+				browser.WindowSize(600, 800),
+			)
 
 			s.Close()
 		})
