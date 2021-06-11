@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -13,51 +12,25 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-// Note is an FTS5 model
 type Note struct {
 	ID        string
-	CreatedAt TimeString
-	UpdatedAt TimeString
-	DeletedAt TimeString
-
-	ModelID string
-
-	Key  string
-	Data NoteData
+	CreatedAt time.Time
+	UpdatedAt time.Time      `gorm:"index"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ModelID   string         `gorm:"index"`
+	Attrs     []NoteAttr     `gorm:"constraint:OnDelete:CASCADE"`
 }
 
-type TimeString sql.NullTime
-
-func (j *TimeString) Scan(value interface{}) error {
-	s, ok := value.(string)
-	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal timestamp value:", value))
-	}
-
-	if s == "" {
-		return nil
-	}
-
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return err
-	}
-
-	j.Time = t
-	return nil
-}
-
-func (j TimeString) Value() (driver.Value, error) {
-	if j.Time.IsZero() {
-		return nil, nil
-	}
-
-	b, e := j.Time.MarshalText()
-	if e != nil {
-		return nil, e
-	}
-
-	return string(b), nil
+// NoteAttr contains hooks to FTS5 model
+type NoteAttr struct {
+	ID        uint
+	CreatedAt time.Time
+	UpdatedAt time.Time      `gorm:"index"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	NoteID    string         `gorm:"index:idx_note_attr_u,unique"`
+	Key       string         `gorm:"index:idx_note_attr_u,unique"`
+	Data      NoteData
+	Lang      string
 }
 
 type NoteData struct {
@@ -67,7 +40,7 @@ type NoteData struct {
 func (j *NoteData) Scan(value interface{}) error {
 	s, ok := value.(string)
 	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+		return errors.New(fmt.Sprint("Failed to unmarshal JSON value:", value))
 	}
 
 	j.Raw = s
@@ -103,27 +76,36 @@ func (j *NoteData) Set(v interface{}) error {
 }
 
 func (NoteData) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
-	switch db.Dialector.Name() {
-	case "mysql", "sqlite":
-		return "JSON"
-	case "postgres":
-		return "JSONB"
-	}
-	return "TEXT"
+	return "JSON"
 }
 
-func (Note) Init(tx *gorm.DB) error {
+// GormDataType gorm common data type
+func (NoteData) GormDataType() string {
+	return "NoteData"
+}
+
+func NoteFTSInit(tx *gorm.DB) error {
 	r := tx.Exec(`
-	CREATE VIRTUAL TABLE IF NOT EXISTS note USING fts5(
-		id,        		-- TEXT NOT NULL
-		created_at,		-- TIMESTAMP
-		updated_at,		-- TIMESTAMP
-		deleted_at,    	-- TIMESTAMP
-		model_id,		-- TEXT NOT NULL REFERENCES model(id)
-		"key",        	-- TEXT NOT NULL
-		"data",       	-- JSON or TEXT
-		"generated" UNINDEXED
+	CREATE VIRTUAL TABLE IF NOT EXISTS note_fts USING fts5(
+		note_id UNINDEXED,
+		key,
+		data,
+		content=note_attr,
+		content_rowid=id,
+		tokenize=porter
 	);
+
+	-- Triggers to keep the FTS index up to date.
+	CREATE TRIGGER IF NOT EXISTS t_note_attr_ai AFTER INSERT ON note_attr BEGIN
+		INSERT INTO note_fts(rowid, note_id, key, data) VALUES (new.id, new.note_id, new.key, tokenize(new.data, new.lang));
+	END;
+	CREATE TRIGGER IF NOT EXISTS t_note_attr_ad AFTER DELETE ON note_attr BEGIN
+		INSERT INTO note_fts(note_fts, rowid, note_id, key, data) VALUES ('delete', old.id, old.note_id, old.key, tokenize(old.data, old.lang));
+	END;
+	CREATE TRIGGER IF NOT EXISTS t_note_attr_au AFTER UPDATE ON note_attr BEGIN
+		INSERT INTO note_fts(note_fts, rowid, note_id, key, data) VALUES ('delete', old.id, old.note_id, old.key, tokenize(old.data, old.lang));
+		INSERT INTO note_fts(rowid, note_id, key, data) VALUES (new.id, new.note_id, new.key, tokenize(new.data, new.lang));
+	END;
 	`)
 	if r.Error != nil {
 		return r.Error
@@ -133,16 +115,5 @@ func (Note) Init(tx *gorm.DB) error {
 }
 
 func (Note) Tidy(tx *gorm.DB) error {
-	if r := tx.
-		Where("id IS NULL").
-		Or("[key] IS NULL").
-		Or("[data] LIKE '{%}' AND NOT json_valid([data])").
-		Or("model_id NOT IN (SELECT id FROM model)").
-		Or("ROWID NOT IN (SELECT ROWID FROM note GROUP BY id, [key])").
-		Or("ROWID NOT IN (SELECT ROWID FROM note GROUP BY model_id)").
-		Delete(&Note{}); r.Error != nil {
-		return r.Error
-	}
-
 	return nil
 }

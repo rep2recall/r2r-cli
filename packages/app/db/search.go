@@ -272,12 +272,12 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 
 		if key != "" {
 			return tx.Where(`card.note_id IN (
-				SELECT id FROM note WHERE "key" = ? AND note MATCH 'data:"'||?||'"'
+				SELECT note_id FROM note_fts WHERE "key" = ? AND note_fts MATCH 'data:"'||?||'"'
 			)`, key, strings.ReplaceAll(value, `"`, `""`))
 		}
 
 		return tx.Where(`card.note_id IN (
-			SELECT id FROM note WHERE note MATCH 'data:"'||?||'"'
+			SELECT note_id FROM note_fts WHERE note_fts MATCH 'data:"'||?||'"'
 		)`, strings.ReplaceAll(value, `"`, `""`))
 	}
 

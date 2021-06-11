@@ -22,7 +22,7 @@ func (r *Router) cardRouter() {
 		var card db.Card
 		if rTx := r.DB.
 			Where("id = ?", query.ID).
-			Preload("Template").Preload("Template.Model").
+			Preload("Template").Preload("Template.Model").Preload("Note.Attrs").
 			First(&card); rTx.Error != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
 		}
@@ -34,12 +34,15 @@ func (r *Router) cardRouter() {
 		out := new(outStruct)
 		out.Data = make(map[string]interface{})
 
-		d, err := card.Data(r.DB)
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-		}
+		for _, a := range card.Note.Attrs {
+			key := a.Key
+			v, e := a.Data.Get()
+			if e != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, e.Error())
+			}
 
-		out.Data = d
+			out.Data[key] = v
+		}
 
 		if query.Side != "mnemonic" {
 			out.Raw = func() string {

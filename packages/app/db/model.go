@@ -21,13 +21,13 @@ type Model struct {
 	Front     string
 	Back      string
 	Shared    string
-	Generated JSONObject
+	Generated MapStringUnknown
 }
 
-type JSONObject map[string]interface{}
+type MapStringUnknown map[string]interface{}
 
 // Scan scan value into JSON, implements sql.Scanner interface
-func (j *JSONObject) Scan(value interface{}) error {
+func (j *MapStringUnknown) Scan(value interface{}) error {
 	if value == nil {
 		*j = nil
 		return nil
@@ -45,7 +45,7 @@ func (j *JSONObject) Scan(value interface{}) error {
 }
 
 // Value return json value, implement driver.Value interface
-func (j JSONObject) Value() (driver.Value, error) {
+func (j MapStringUnknown) Value() (driver.Value, error) {
 	if j == nil {
 		return nil, nil
 	}
@@ -58,19 +58,13 @@ func (j JSONObject) Value() (driver.Value, error) {
 }
 
 // GormDBDataType represents driver's JSON data type
-func (JSONObject) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
-	switch db.Dialector.Name() {
-	case "mysql", "sqlite":
-		return "JSON"
-	case "postgres":
-		return "JSONB"
-	}
-	return "TEXT"
+func (MapStringUnknown) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
+	return "JSON"
 }
 
 // GormDataType gorm common data type
-func (JSONObject) GormDataType() string {
-	return "jsonObject"
+func (MapStringUnknown) GormDataType() string {
+	return "MapStringUnknown"
 }
 
 func (Model) Tidy(tx *gorm.DB) error {

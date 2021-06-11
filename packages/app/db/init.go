@@ -1,44 +1,57 @@
 package db
 
 import (
+	"database/sql"
 	"log"
 	"path/filepath"
 
+	"github.com/mattn/go-sqlite3"
 	"github.com/rep2recall/rep2recall/shared"
-	"gorm.io/driver/sqlite"
+	gormSqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
+// TODO: check language and parse accordingly
+func tokenize(s string, lang string) string {
+	return s
+}
+
+func init() {
+	sql.Register("sqlite3_custom", &sqlite3.SQLiteDriver{
+		ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+			if err := conn.RegisterFunc("tokenize", tokenize, true); err != nil {
+				return err
+			}
+			return nil
+		},
+	})
+}
+
 func Connect() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(shared.UserDataDir(), "data.db")), &gorm.Config{
+	db, err := gorm.Open(gormSqlite.Dialector{
+		DriverName: "sqlite3_custom",
+		DSN:        filepath.Join(shared.UserDataDir(), "data.db"),
+	}, &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
-		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	mi := db.Migrator()
-	if !mi.HasTable(Model{}) {
-		if e := mi.CreateTable(Model{}); e != nil {
-			log.Fatalln(e)
-		}
-	}
-	if !mi.HasTable(Card{}) {
-		if e := mi.CreateTable(Card{}); e != nil {
-			log.Fatalln(e)
-		}
-	}
-	if !mi.HasTable(Template{}) {
-		if e := mi.CreateTable(Template{}); e != nil {
-			log.Fatalln(e)
-		}
+	if err := db.AutoMigrate(
+		&Model{},
+		&Template{},
+		&Note{},
+		&NoteAttr{},
+		&Card{},
+	); err != nil {
+		log.Fatalln(err)
 	}
 
-	if err := (Note{}).Init(db); err != nil {
+	if err := NoteFTSInit(db); err != nil {
 		log.Fatalln(err)
 	}
 

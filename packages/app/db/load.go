@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
@@ -207,11 +206,6 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		}
 	}
 
-	now := TimeString{
-		Valid: true,
-		Time:  time.Now(),
-	}
-
 	for _, n := range loadFile.Note {
 		if noteGenResultMap[n.ID] != nil {
 			for key, v := range noteGenResultMap[n.ID] {
@@ -221,30 +215,25 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			}
 		}
 
+		if r := tx.FirstOrCreate(&Note{
+			ID:      n.ID,
+			ModelID: n.ModelID,
+		}); r.Error != nil {
+			return r.Error
+		}
+
 		for key, v := range n.Data {
 			data := NoteData{}
 			if err := data.Set(v); err != nil {
 				return err
 			}
 
-			if r := tx.Model(&Note{}).Where(&Note{
-				ID:      n.ID,
-				ModelID: n.ModelID,
-				Key:     key,
-			}).UpdateColumn("id", "_"+n.ID).Updates(&Note{
-				UpdatedAt: now,
-				DeletedAt: now,
-			}); r.Error != nil {
-				return r.Error
-			}
-
-			if r := tx.Create(&Note{
-				ID:        n.ID,
-				CreatedAt: now,
-				UpdatedAt: now,
-				ModelID:   n.ModelID,
-				Key:       key,
-				Data:      data,
+			if r := tx.Clauses(clause.OnConflict{
+				DoUpdates: clause.AssignmentColumns([]string{"data"}),
+			}).Create(&NoteAttr{
+				NoteID: n.ID,
+				Key:    key,
+				Data:   data,
 			}); r.Error != nil {
 				return r.Error
 			}
@@ -282,9 +271,10 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	for tid, t := range templateToCreate {
 		if t.ModelID != "" {
 			var notes []Note
-			if r := tx.Raw(`
-			SELECT * FROM note WHERE model_id = ?
-			`, t.ModelID).Find(&notes); r.Error != nil {
+			if r := tx.
+				Where("model_id = ?", t.ModelID).
+				Preload("Attrs").
+				Find(&notes); r.Error != nil {
 				return r.Error
 			}
 
@@ -317,11 +307,14 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 					noteMap[n.ID] = map[string]interface{}{}
 				}
 
-				v, e := n.Data.Get()
-				if e != nil {
-					return e
+				for _, a := range n.Attrs {
+					k := a.Key
+					v, e := a.Data.Get()
+					if e != nil {
+						return e
+					}
+					noteMap[n.ID][k] = v
 				}
-				noteMap[n.ID][n.Key] = v
 			}
 
 			for nid, n := range noteMap {
@@ -400,6 +393,9 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	for id, ca := range cardToCompile {
 		if ca.If != "false" {
 			if r := tx.
+				Clauses(clause.OnConflict{
+					DoNothing: true,
+				}).
 				Create(&Card{
 					ID:         id,
 					TemplateID: ca.Template.ID,
@@ -407,7 +403,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 				}); r.Error != nil {
 				return r.Error
 			}
-		} else if ca.Template.ID != "" && ca.NoteID != "" {
+		} else {
 			if r := tx.
 				Where("template_id = ?", ca.Template.ID).
 				Where("note_id = ?", ca.NoteID).
@@ -423,7 +419,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			if r := tx.
 				Where("template_id = ?", c.TemplateID).
 				Where("note_id = ?", c.NoteID).
-				Delete(&c0); r.Error != nil {
+				FirstOrInit(&c0); r.Error != nil {
 				return r.Error
 			}
 		}

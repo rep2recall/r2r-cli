@@ -10,5 +10,5 @@ plugins:
     go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
 
 variables:
-  buildTags: sqlite_fts5 sqlite_json1
+  buildTags: sqlite_fts5
   exe: '"$([ $(go env GOOS) = "windows" ] && echo "rep2recall.exe" || echo "rep2recall")"'

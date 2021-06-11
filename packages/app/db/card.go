@@ -16,10 +16,10 @@ type Card struct {
 	UpdatedAt time.Time      `gorm:"index"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	TemplateID string   `gorm:"index"`
+	TemplateID string   `gorm:"index:idx_card_u,unique"`
 	Template   Template `gorm:"constraint:OnDelete:CASCADE"`
-
-	NoteID string `gorm:"index"`
+	NoteID     string   `gorm:"index:idx_card_u,unique"`
+	Note       Note     `gorm:"constraint:OnDelete:CASCADE"`
 
 	Front       string
 	Back        string
@@ -113,27 +113,6 @@ func (j *SpaceSeparated) Set(v map[string]bool) error {
 	}
 	j.Raw = out
 	return nil
-}
-
-func (c Card) Data(tx *gorm.DB) (map[string]interface{}, error) {
-	var notes []Note
-	r := tx.Where("id = ?", c.NoteID).Find(&notes)
-	if r.Error != nil {
-		return nil, r.Error
-	}
-
-	out := map[string]interface{}{}
-
-	for _, n := range notes {
-		v, e := n.Data.Get()
-		if e != nil {
-			return nil, e
-		}
-
-		out[n.Key] = v
-	}
-
-	return out, nil
 }
 
 func (Card) Tidy(tx *gorm.DB) error {
