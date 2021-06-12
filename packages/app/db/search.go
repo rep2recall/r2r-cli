@@ -128,7 +128,7 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 		return tx.Where("TRUE")
 	}
 
-	qBuilder := tx
+	rootTx := tx
 	includes := struct {
 		Model    bool
 		Template bool
@@ -322,18 +322,18 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 	}
 
 	if includes.Template {
-		qBuilder = qBuilder.Joins("Template")
+		tx = tx.Joins("Template")
 	}
 
 	if includes.Model {
-		qBuilder = qBuilder.Joins("Model")
+		tx = tx.Joins("Model")
 	}
 
 	if orCond != nil {
-		qBuilder = qBuilder.Where(orCond.Or(andCond))
+		tx = tx.Where(orCond.Or(andCond))
 	} else {
-		qBuilder = qBuilder.Where(andCond)
+		tx = tx.Where(andCond)
 	}
 
-	return qBuilder
+	return rootTx.Where(tx)
 }

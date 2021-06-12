@@ -46,39 +46,41 @@ func Serve(opts ServerOptions) Server {
 
 	app.Use(recover.New())
 
-	app.Use(logger.New(logger.Config{
-		Next: func(c *fiber.Ctx) bool {
-			body := c.Body()
-			prettyBody := ""
-			if len(body) > 0 {
-				prettyBody = func() string {
-					var str map[string]interface{}
-					if e := json.Unmarshal(body, &str); e != nil {
-						log.New(os.Stderr, "", log.LstdFlags).Println(e)
-						return ""
-					}
+	app.Use(logger.New(
+		logger.Config{
+			Next: func(c *fiber.Ctx) bool {
+				body := c.Body()
+				prettyBody := ""
+				if len(body) > 0 {
+					prettyBody = func() string {
+						var str map[string]interface{}
+						if e := json.Unmarshal(body, &str); e != nil {
+							log.New(os.Stderr, "", log.LstdFlags).Println(e)
+							return ""
+						}
 
-					b, e := json.MarshalIndent(str, "", "  ")
-					if e != nil {
-						log.New(os.Stderr, "", log.LstdFlags).Println(e)
-						return ""
-					}
+						b, e := json.MarshalIndent(str, "", "  ")
+						if e != nil {
+							log.New(os.Stderr, "", log.LstdFlags).Println(e)
+							return ""
+						}
 
-					return string(b)
-				}()
-			}
+						return string(b)
+					}()
+				}
 
-			if prettyBody != "" {
-				log.Printf("body: %s", prettyBody)
-			}
+				if prettyBody != "" {
+					log.Printf("body: %s", prettyBody)
+				}
 
-			return false
+				return false
+			},
 		},
-	}))
-	app.Use(logger.New(logger.Config{
-		Output: f,
-		Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams} ${body} ${resBody}\n",
-	}))
+		logger.Config{
+			Output: f,
+			Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams} ${body} ${resBody}\n",
+		},
+	))
 
 	apiSrv := app.Group("/server")
 

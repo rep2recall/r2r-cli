@@ -8,9 +8,14 @@ async function main() {
     return
   }
 
+  const { searchParams } = new URL(location.href)
+  const q = searchParams.get('q') || ''
+  const files = searchParams.get('files') || ''
+
   const { data } = await api.post('/api/quiz/init', undefined, {
     params: {
-      q: new URL(location.href).searchParams.get('q'),
+      q,
+      files,
       state: 'new,learning,due',
     },
   })
@@ -18,7 +23,7 @@ async function main() {
   createApp(Init, {
     type: 'Quiz',
     session: data.id,
-    close: true
+    autoclose: false
   }).mount('#Quiz')
 }
 

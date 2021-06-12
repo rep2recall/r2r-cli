@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -222,6 +223,21 @@ func main() {
 			debug := false
 			browserOfChoice := ""
 			filter := ""
+			files := make([]string, 0)
+
+			for k, v := range args {
+				if k == "files" {
+					files = append(files, v.Value)
+				}
+			}
+
+			fileString := ""
+			if len(files) > 0 {
+				b, e := json.Marshal(&files)
+				if e == nil {
+					fileString = string(b)
+				}
+			}
 
 			for k, v := range flags {
 				switch k {
@@ -257,7 +273,13 @@ func main() {
 				ExecPath: browserOfChoice,
 			}
 			b.AppMode(
-				fmt.Sprintf("http://localhost:%d/quiz.html?secret=%s&q=%s", port, shared.ServerSecret(), url.QueryEscape(filter)),
+				fmt.Sprintf(
+					"http://localhost:%d/quiz.html?secret=%s&q=%s&files=%s",
+					port,
+					shared.ServerSecret(),
+					url.QueryEscape(filter),
+					url.QueryEscape(fileString),
+				),
 				browser.WindowSize(600, 800),
 			)
 

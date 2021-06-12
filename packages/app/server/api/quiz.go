@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"math/rand"
 	"strings"
 	"time"
@@ -177,10 +178,55 @@ func (r *Router) quizRouter() {
 type getCardStruct struct {
 	Q     string
 	State string
+	Files string
 }
 
 func getCard(tx *gorm.DB, query getCardStruct) ([]db.Card, error) {
-	rTx := db.Search(tx, query.Q)
+	rootTx := tx
+
+	if query.Files != "" {
+		files := make([]string, 0)
+		if e := json.Unmarshal([]byte(query.Files), &files); e != nil {
+			return nil, e
+		}
+
+		for _, f := range files {
+			str, e := db.LoadStruct(f)
+			if e != nil {
+				return nil, e
+			}
+
+			var cond *gorm.DB
+
+			noteIDs := make([]string, 0)
+			for _, n := range str.Note {
+				noteIDs = append(noteIDs, n.ID)
+			}
+
+			if len(noteIDs) > 0 {
+				cond = tx.Where("note_id IN ?", noteIDs)
+			}
+
+			cardIDs := make([]string, 0)
+			for _, c := range str.Card {
+				cardIDs = append(cardIDs, c.ID)
+			}
+
+			if len(cardIDs) > 0 {
+				if cond != nil {
+					cond = cond.Or(tx.Where("id IN ?", cardIDs))
+				} else {
+					cond = tx.Where("id IN ?", cardIDs)
+				}
+			}
+
+			if cond != nil {
+				rootTx = rootTx.Where(cond)
+			}
+		}
+	}
+
+	rTx := db.Search(rootTx, query.Q)
 
 	rState := tx.Where("FALSE")
 	if len(query.State) > 0 {

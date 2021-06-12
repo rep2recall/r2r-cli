@@ -20,7 +20,7 @@ import (
 
 var validate *validator.Validate
 
-type loadedFile struct {
+type LoadedStruct struct {
 	Model []struct {
 		ID        string `validate:"required,uuid"`
 		Name      string
@@ -71,19 +71,40 @@ type LoadOptions struct {
 	Port  int
 }
 
+func init() {
+	validate = validator.New()
+	validate.RegisterValidation("blank-is-string", ValidateBlankIsString)
+}
+
+func LoadStruct(f string) (LoadedStruct, error) {
+	var loadFile LoadedStruct
+
+	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir(), f))
+	if e != nil {
+		return loadFile, e
+	}
+
+	if e := yaml.Unmarshal(b, &loadFile); e != nil {
+		return loadFile, e
+	}
+
+	if e := validate.Struct(&loadFile); e != nil {
+		return loadFile, e
+	}
+
+	return loadFile, nil
+}
+
 func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir(), f))
 	if e != nil {
 		return e
 	}
 
-	var loadFile loadedFile
+	var loadFile LoadedStruct
 	if e := yaml.Unmarshal(b, &loadFile); e != nil {
 		return e
 	}
-
-	validate = validator.New()
-	validate.RegisterValidation("blank-is-string", ValidateBlankIsString)
 
 	if e := validate.Struct(&loadFile); e != nil {
 		return e

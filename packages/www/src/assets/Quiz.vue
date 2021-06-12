@@ -1,9 +1,16 @@
 <template>
   <div id="Quiz" style="display: grid; grid-template-rows: 1fr auto">
     <iframe
+      v-if="card.id"
       :src="`/card.html?side=${side}&id=${card.id}&secret=${secret}`"
       style="border-bottom: 1px solid rgba(128, 128, 128, 0.7)"
     ></iframe>
+    <div v-else class="card">
+      <div class="card-content">
+        <p>No quiz pending.</p>
+      </div>
+    </div>
+
     <footer
       style="
         display: grid;
@@ -26,7 +33,10 @@
         </button>
       </div>
 
-      <div class="buttons">
+      <div
+        :style="{ visibility: card.id ? 'visible' : 'hidden' }"
+        class="buttons"
+      >
         <button
           v-if="side !== 'back'"
           class="button is-warning"
@@ -99,7 +109,7 @@
         </button>
 
         <button
-          v-else-if="side != 'front'"
+          v-else-if="side != 'front' && autoclose"
           class="button is-success"
           type="button"
           @click="() => $emit('end') && endQuiz()"
@@ -116,7 +126,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { api } from './api'
 
 export default defineComponent({
-  props: ['session', 'close'],
+  props: ['session', 'autoclose'],
   emits: ['end'],
   setup(props) {
     const side = ref('front')
@@ -181,9 +191,9 @@ export default defineComponent({
     }
 
     const endQuiz = () => {
-      if (props.close) {
-        window.close()
-      }
+      // if (props.autoclose) {
+      //   window.close()
+      // }
     }
 
     onMounted(() => {
@@ -212,6 +222,7 @@ export default defineComponent({
       endQuiz,
       dSrsLevel,
       toggleMark,
+      autoclose: props.autoclose,
     }
   },
   computed: {
