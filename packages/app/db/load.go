@@ -263,14 +263,14 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 
 	templateToCreate := make(map[string]Template)
 
-	for _, m := range loadFile.Model {
+	for mid := range modelGenMap {
 		tids := make([]string, 0)
 		for _, t := range loadFile.Template {
 			tids = append(tids, t.ID)
 		}
 
 		var templates []Template
-		if r := tx.Where("model_id = ?", m.ID).Or("id IN ?", tids).Find(&templates); r.Error != nil {
+		if r := tx.Where("model_id = ?", mid).Or("id IN ?", tids).Find(&templates); r.Error != nil {
 			return r.Error
 		}
 		for _, t := range templates {

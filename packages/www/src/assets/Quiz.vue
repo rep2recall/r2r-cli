@@ -5,10 +5,8 @@
       :src="`/card.html?side=${side}&id=${card.id}&secret=${secret}`"
       style="border-bottom: 1px solid rgba(128, 128, 128, 0.7)"
     ></iframe>
-    <div v-else class="card">
-      <div class="card-content">
-        <p>No quiz pending.</p>
-      </div>
+    <div v-else>
+      <p>No quiz pending.</p>
     </div>
 
     <footer
@@ -159,10 +157,7 @@ export default defineComponent({
             ...cards.value.slice(i + 1),
           ]
           side.value = 'front'
-
-          if (i < cards.value.length - 2) {
-            index.value = i + 1
-          }
+          index.value = i + 1
         })
     }
 
