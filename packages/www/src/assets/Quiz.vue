@@ -7,7 +7,7 @@
     <footer
       style="
         display: grid;
-        grid-template-columns: minmax(25vw, 100px) 1fr minmax(25vw, 100px);
+        grid-template-columns: 100px 1fr 100px;
         align-items: center;
         overflow: auto;
         min-height: 120px;
@@ -99,7 +99,7 @@
         </button>
 
         <button
-          v-else
+          v-else-if="side != 'front'"
           class="button is-success"
           type="button"
           @click="() => $emit('end') && endQuiz()"
@@ -116,7 +116,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { api } from './api'
 
 export default defineComponent({
-  props: ['session'],
+  props: ['session', 'close'],
   emits: ['end'],
   setup(props) {
     const side = ref('front')
@@ -181,7 +181,9 @@ export default defineComponent({
     }
 
     const endQuiz = () => {
-      console.log('Ending quiz')
+      if (props.close) {
+        window.close()
+      }
     }
 
     onMounted(() => {
