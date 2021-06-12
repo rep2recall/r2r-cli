@@ -12,11 +12,17 @@
 
       <div
         class="mx-4"
-        style="display: flex; flex-direction: row; justify-content: center"
+        style="
+          display: grid;
+          grid-template-columns: minmax(80px, 1.5fr) 1fr 1fr;
+          gap: 1em;
+          max-width: 800px;
+          margin: 0 auto !important;
+        "
       >
         <div class="field">
-          <div class="control">
-            <label class="radio">
+          <div class="control check-list">
+            <label class="checkbox">
               <input
                 type="checkbox"
                 name="learning"
@@ -30,7 +36,7 @@
               />
               New
             </label>
-            <label class="radio">
+            <label class="checkbox">
               <input
                 type="checkbox"
                 name="learning"
@@ -44,7 +50,7 @@
               />
               Learning
             </label>
-            <label class="radio">
+            <label class="checkbox">
               <input
                 type="checkbox"
                 name="learning"
@@ -61,9 +67,7 @@
           </div>
         </div>
 
-        <div style="width: 5em"></div>
-
-        <div class="field">
+        <div class="field" style="justify-self: end; padding-right: 1em">
           <label class="checkbox">
             <input
               type="checkbox"
@@ -79,9 +83,7 @@
           </label>
         </div>
 
-        <div style="width: 5em"></div>
-
-        <div class="field">
+        <div class="field" style="justify-self: end; padding-right: 1em">
           <label class="checkbox">
             <input
               type="checkbox"
@@ -168,7 +170,7 @@
       <div class="modal-background"></div>
       <div
         class="modal-card"
-        style="width: 80vw; max-width: 1200px; height: 100%"
+        style="min-width: 80vw; max-width: 1200px; height: 100%"
       >
         <header class="modal-card-head">
           <p class="modal-card-title">Quiz</p>
@@ -329,6 +331,16 @@ export default defineComponent({
     label + & {
       margin-left: 0.5em;
     }
+  }
+}
+
+.check-list {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 1em;
+
+  @media screen and (max-width: 630px) {
+    grid-auto-flow: row;
   }
 }
 </style>

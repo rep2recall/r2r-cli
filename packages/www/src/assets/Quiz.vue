@@ -1,98 +1,112 @@
 <template>
-  <div id="Quiz">
+  <div id="Quiz" style="display: grid; grid-template-rows: 1fr auto">
     <iframe
       :src="`/card.html?side=${side}&id=${card.id}&secret=${secret}`"
-      sandbox="allow-scripts allow-same-origin allow-forms"
+      style="border-bottom: 1px solid rgba(128, 128, 128, 0.7)"
     ></iframe>
-    <footer>
-      <button
-        :disabled="!(index > 0)"
-        :style="{ visibility: index > 0 ? 'visible' : 'hidden' }"
-        class="button"
-        type="button"
-        @click="index--"
-      >
-        Previous
-      </button>
+    <footer
+      style="
+        display: grid;
+        grid-template-columns: minmax(25vw, 100px) 1fr minmax(25vw, 100px);
+        align-items: center;
+        overflow: auto;
+        min-height: 120px;
+        max-height: 30vh;
+      "
+    >
+      <div>
+        <button
+          :disabled="!(index > 0)"
+          :style="{ visibility: index > 0 ? 'visible' : 'hidden' }"
+          class="button"
+          type="button"
+          @click="index--"
+        >
+          Previous
+        </button>
+      </div>
 
-      <div style="flex-grow: 1"></div>
+      <div class="buttons">
+        <button
+          v-if="side !== 'back'"
+          class="button is-warning"
+          type="button"
+          @click="side = 'back'"
+        >
+          Show answer
+        </button>
 
-      <button
-        v-if="side !== 'back'"
-        class="button is-warning"
-        type="button"
-        @click="side = 'back'"
-      >
-        Show answer
-      </button>
-      <button
-        v-else
-        class="button is-warning"
-        type="button"
-        @click="side = 'front'"
-      >
-        Hide answer
-      </button>
+        <div class="buttons">
+          <button
+            v-if="side !== 'front'"
+            class="button is-primary"
+            @click="dSrsLevel(1)"
+          >
+            Right
+          </button>
+          <button
+            v-if="side !== 'front'"
+            class="button is-danger"
+            @click="dSrsLevel(-1)"
+          >
+            Wrong
+          </button>
+          <button
+            v-if="side !== 'front'"
+            class="button is-info"
+            @click="dSrsLevel(0)"
+          >
+            Repeat
+          </button>
+        </div>
 
-      <button
-        v-if="side !== 'front'"
-        class="button is-primary"
-        @click="dSrsLevel(1)"
-      >
-        Right
-      </button>
-      <button
-        v-if="side !== 'front'"
-        class="button is-danger"
-        @click="dSrsLevel(-1)"
-      >
-        Wrong
-      </button>
-      <button
-        v-if="side !== 'front'"
-        class="button is-info"
-        @click="dSrsLevel(0)"
-      >
-        Repeat
-      </button>
+        <div class="buttons">
+          <button
+            v-if="side === 'back'"
+            class="button is-warning"
+            type="button"
+            @click="side = 'front'"
+          >
+            Hide answer
+          </button>
+          <button
+            v-if="side !== 'front'"
+            :class="`button ` + (card.isMarked ? 'is-warning' : 'is-success')"
+            @click="toggleMark()"
+          >
+            {{ card.isMarked ? 'Unmark' : 'Mark' }}
+          </button>
 
-      <button
-        v-if="side !== 'front'"
-        :class="`button ` + (card.isMarked ? 'is-warning' : 'is-success')"
-        @click="toggleMark()"
-      >
-        {{ card.isMarked ? 'Unmark' : 'Mark' }}
-      </button>
+          <button
+            v-if="side === 'back'"
+            class="button has-background-grey-lighter"
+            type="button"
+            @click="side = 'mnemonic'"
+          >
+            Mnemonic
+          </button>
+        </div>
+      </div>
 
-      <button
-        v-if="side === 'back'"
-        class="button has-background-grey-lighter"
-        type="button"
-        @click="side = 'mnemonic'"
-      >
-        Mnemonic
-      </button>
+      <div style="margin-left: auto">
+        <button
+          v-if="index < cards.length - 2"
+          class="button has-background-grey-lighter"
+          type="button"
+          @click="index++"
+        >
+          Next
+        </button>
 
-      <div style="flex-grow: 1"></div>
-
-      <button
-        :disabled="!(index < cards.length - 2)"
-        :style="{ visibility: index < cards.length - 2 ? 'visible' : 'hidden' }"
-        class="button has-background-grey-lighter"
-        type="button"
-        @click="index++"
-      >
-        Next
-      </button>
-
-      <button
-        v-if="index >= cards.length - 2"
-        class="button is-success"
-        type="button"
-        @click="() => $emit('end') && endQuiz()"
-      >
-        End Quiz
-      </button>
+        <button
+          v-else
+          class="button is-success"
+          type="button"
+          @click="() => $emit('end') && endQuiz()"
+        >
+          End Quiz
+        </button>
+      </div>
     </footer>
   </div>
 </template>
@@ -212,8 +226,6 @@ export default defineComponent({
 
 <style lang="scss">
 #Quiz {
-  display: grid;
-  grid-template-rows: 1fr auto;
   height: 100%;
   width: 100%;
 
@@ -223,14 +235,15 @@ export default defineComponent({
     border: none;
   }
 
-  footer {
-    display: flex;
-    flex-direction: row;
-    margin-top: 1em;
+  button {
+    margin: 0.5em;
   }
 
-  button + button {
-    margin-left: 1em;
+  .buttons {
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 </style>
