@@ -124,8 +124,8 @@ jobs:
           mkdir dist
 
           cp packages/app/rep2recall.exe dist/rep2recall.exe
-          cp /s packages/app/plugins dist/plugins
-          cp /s packages/app/public dist/public
+          cp -r packages/app/plugins dist/plugins
+          cp -r packages/app/public dist/public
 
           cd dist
           tar -cf ../rep2recall-windows.tar *
