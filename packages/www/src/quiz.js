@@ -23,7 +23,7 @@ async function main() {
   createApp(Init, {
     type: 'Quiz',
     session: data.id,
-    autoclose: false
+    standalone: true
   }).mount('#Quiz')
 }
 

@@ -241,7 +241,19 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 		case "tag":
 			return tx.Where("card.tag LIKE '% '||?||' %'", value)
 		case "status":
-			return tx.Where("card.status LIKE '% '||?||' %'", value)
+			switch value {
+			case "new":
+				return tx.Where("card.next_review IS NULL")
+			case "due":
+				return tx.Where("strftime('%s', card.next_review) < strftime('%s', 'now')")
+			case "leech":
+				return tx.Where("card.wrong_streak > 2")
+			case "learning":
+				return tx.Where("card.next_review IS NOT NULL AND card.srs_level <= 3")
+			case "graduated":
+				return tx.Where("card.srs_level > 3")
+			}
+			return tx.Where("FALSE")
 		case "id":
 			return tx.Where("card.id = ?", value)
 		case "noteId":

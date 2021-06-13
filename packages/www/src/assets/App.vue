@@ -129,7 +129,12 @@
         </div>
 
         <form class="field" @submit.prevent="doQuiz">
-          <button name="quiz" class="button is-success" type="submit">
+          <button
+            :disabled="!(stat.next || stat.due)"
+            name="quiz"
+            class="button is-success"
+            type="submit"
+          >
             Quiz
           </button>
         </form>
@@ -170,14 +175,19 @@
       <div class="modal-background"></div>
       <div
         class="modal-card"
-        style="min-width: 80vw; max-width: 1200px; height: 100%"
+        style="width: 600px; max-width: 1200px; height: 100%"
       >
         <header class="modal-card-head">
           <p class="modal-card-title">Quiz</p>
           <button
             class="delete"
             aria-label="close"
-            @click="isQuiz = false"
+            @click="
+              () => {
+                isQuiz = false
+                doFilter()
+              }
+            "
           ></button>
         </header>
         <section class="modal-card-body" style="height: 100%">
@@ -220,6 +230,7 @@ export default defineComponent({
       new: 0,
       due: 0,
       leech: 0,
+      next: '',
     })
     const leechItems = ref([] as string[])
     const isLeechOpen = ref(false)
@@ -261,6 +272,7 @@ export default defineComponent({
           new: number
           due: number
           leech: number
+          next: string
         }>('/api/quiz/stat', {
           params: {
             q: q.value,
@@ -276,6 +288,7 @@ export default defineComponent({
       api
         .post<{
           id: string
+          count: number
         }>('/api/quiz/init', undefined, {
           params: {
             q: q.value,

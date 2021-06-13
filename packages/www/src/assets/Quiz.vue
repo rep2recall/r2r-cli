@@ -124,7 +124,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { api } from './api'
 
 export default defineComponent({
-  props: ['session', 'autoclose'],
+  props: ['session', 'standalone'],
   emits: ['end'],
   setup(props) {
     const side = ref('front')
@@ -217,7 +217,7 @@ export default defineComponent({
       endQuiz,
       dSrsLevel,
       toggleMark,
-      autoclose: props.autoclose,
+      autoclose: !props.standalone,
     }
   },
   computed: {

@@ -34,30 +34,6 @@ type Card struct {
 	RightStreak int            `gorm:"index"`
 	WrongStreak int            `gorm:"index"`
 	Tag         SpaceSeparated `gorm:"index"`
-	Status      SpaceSeparated `gorm:"index;default:' new '"`
-}
-
-func (c *Card) BeforeSave(tx *gorm.DB) error {
-	status := map[string]bool{}
-	now := time.Now()
-
-	if c.NextReview == nil {
-		status["new"] = true
-	} else if c.NextReview.Before(now) {
-		status["due"] = true
-	}
-
-	if c.WrongStreak > 1 {
-		status["leech"] = true
-	}
-
-	if c.SRSLevel > 3 {
-		status["graduated"] = true
-	} else if c.NextReview != nil {
-		status["learning"] = true
-	}
-
-	return c.Status.Set(status)
 }
 
 type SpaceSeparated struct {

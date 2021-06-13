@@ -76,6 +76,8 @@ func Serve(opts ServerOptions) Server {
 				return false
 			},
 		},
+	))
+	app.Use(logger.New(
 		logger.Config{
 			Output: f,
 			Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams} ${body} ${resBody}\n",

@@ -111,29 +111,35 @@ func (r *Router) quizRouter() {
 		}
 
 		type outStruct struct {
-			New   int `json:"new"`
-			Due   int `json:"due"`
-			Leech int `json:"leech"`
+			New   int    `json:"new"`
+			Due   int    `json:"due"`
+			Leech int    `json:"leech"`
+			Next  string `json:"next"`
 		}
 		out := outStruct{}
+		now := time.Now()
+		var next time.Time
 
 		for _, c := range cards {
-			status, err := c.Status.Get()
-			if err != nil {
-				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-			}
-
-			if status["new"] {
+			if c.NextReview == nil {
 				out.New += 1
+			} else {
+				if c.NextReview.Before(now) {
+					out.Due += 1
+				}
+
+				if c.NextReview.After(now) && (next.IsZero() || c.NextReview.Before(next)) {
+					next = *c.NextReview
+				}
 			}
 
-			if status["due"] {
-				out.Due += 1
-			}
-
-			if status["leech"] {
+			if c.WrongStreak > 2 {
 				out.Leech += 1
 			}
+		}
+
+		if next.After(now) {
+			out.Next = next.Format(time.RFC3339)
 		}
 
 		return c.JSON(out)
