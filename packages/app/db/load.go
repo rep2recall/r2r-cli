@@ -51,7 +51,6 @@ type LoadedStruct struct {
 		Front      string
 		Back       string
 		Shared     string
-		Mnemonic   string
 	} `validate:"dive"`
 }
 
@@ -467,7 +466,6 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			Front:      c.Front,
 			Back:       c.Back,
 			Shared:     c.Shared,
-			Mnemonic:   c.Mnemonic,
 		}); r.Error != nil {
 			return r.Error
 		}

@@ -1,7 +1,14 @@
 <template>
   <div id="Quiz" style="display: grid; grid-template-rows: 1fr auto">
+    <div
+      v-if="side === 'mnemonic'"
+      id="Mnemonic"
+      style="display: flex; flex-direction: column"
+    >
+      <div class="quill"></div>
+    </div>
     <iframe
-      v-if="card.id"
+      v-else-if="card.id"
       :src="`/card.html?side=${side}&id=${card.id}&secret=${secret}`"
       style="border-bottom: 1px solid rgba(128, 128, 128, 0.7)"
     ></iframe>
@@ -36,7 +43,7 @@
         class="buttons"
       >
         <button
-          v-if="side !== 'back'"
+          v-if="side === 'front'"
           class="button is-warning"
           type="button"
           @click="side = 'back'"
@@ -76,6 +83,14 @@
             @click="side = 'front'"
           >
             Hide answer
+          </button>
+          <button
+            v-if="side === 'mnemonic'"
+            class="button is-warning"
+            type="button"
+            @click="side = 'back'"
+          >
+            Show answer
           </button>
           <button
             v-if="side !== 'front'"
@@ -120,8 +135,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, nextTick, onMounted, ref, watch } from 'vue'
+import Quill from 'quill'
 import { api } from './api'
+
+import 'quill/dist/quill.snow.css'
+
+let quill: Quill
 
 export default defineComponent({
   props: ['session', 'standalone'],
@@ -164,6 +184,10 @@ export default defineComponent({
     const toggleMark = () => {
       const i = index.value
       const c = cards.value[i]
+      if (!c) {
+        return
+      }
+
       c.isMarked = !c.isMarked
 
       api
@@ -190,6 +214,44 @@ export default defineComponent({
       //   window.close()
       // }
     }
+
+    watch(side, (side) => {
+      const i = index.value
+      const c = cards.value[i]
+
+      if (side === 'mnemonic' && c) {
+        nextTick(() => {
+          if (quill) {
+            quill.disable()
+          }
+
+          api
+            .get('/api/card/mnemonic', {
+              params: {
+                id: c.id,
+              },
+            })
+            .then((r) => {
+              quill = new Quill('#Mnemonic .quill', {
+                placeholder: 'Compose a memorable mnemonic...',
+                theme: 'snow',
+              })
+
+              quill.setContents(r.data)
+              quill.on('text-change', () => {
+                console.log(quill.getContents())
+                api.put('/api/card/mnemonic', quill.getContents(), {
+                  params: {
+                    id: c.id,
+                  },
+                })
+              })
+
+              r.data
+            })
+        })
+      }
+    })
 
     onMounted(() => {
       api

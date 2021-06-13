@@ -108,6 +108,56 @@ func (r *Router) cardRouter() {
 		return c.JSON(out)
 	})
 
+	router.Get("/mnemonic", func(c *fiber.Ctx) error {
+		type queryStruct struct {
+			ID string `validate:"required,uuid"`
+		}
+
+		query := new(queryStruct)
+		if e := c.QueryParser(query); e != nil {
+			return fiber.NewError(fiber.StatusBadRequest, e.Error())
+		}
+
+		var card db.Card
+		if rTx := r.DB.
+			Where("id = ?", query.ID).
+			First(&card); rTx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
+		}
+
+		if card.Mnemonic == "" {
+			return c.SendString("{}")
+		}
+
+		return c.SendString(card.Mnemonic)
+	})
+
+	router.Put("/mnemonic", func(c *fiber.Ctx) error {
+		type queryStruct struct {
+			ID string `validate:"required,uuid"`
+		}
+
+		query := new(queryStruct)
+		if e := c.QueryParser(query); e != nil {
+			return fiber.NewError(fiber.StatusBadRequest, e.Error())
+		}
+
+		rTx := r.DB.
+			Model(&db.Card{}).
+			Where("id = ?", query.ID).
+			Update("mnemonic", string(c.Body()))
+
+		if rTx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, rTx.Error.Error())
+		}
+
+		if rTx.RowsAffected == 0 {
+			return fiber.ErrNotFound
+		}
+
+		return c.SendStatus(fiber.StatusCreated)
+	})
+
 	router.Patch("/dSrsLevel", func(c *fiber.Ctx) error {
 		type queryStruct struct {
 			ID        string `validate:"required,uuid"`

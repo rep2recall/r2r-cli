@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -64,7 +66,8 @@ func (j SpaceSeparated) Get() (map[string]bool, error) {
 	}
 
 	if len(j.Raw) < 2 || (j.Raw[0] != ' ' && j.Raw[len(j.Raw)-1] != ' ') {
-		return nil, errors.New(fmt.Sprint("Failed to unmarshal SpaceSeparated value:", j.Raw))
+		log.New(os.Stderr, "", log.LstdFlags).Printf("invalid SpaceSeparated value: %s\n", j.Raw)
+		return map[string]bool{}, nil
 	}
 
 	out := map[string]bool{}
@@ -82,12 +85,20 @@ func (j *SpaceSeparated) Set(v map[string]bool) error {
 	}
 
 	out := " "
-	for k, v := range v {
-		if v {
+	length := 0
+	for k, t := range v {
+		if t {
 			out += k + " "
+			length++
 		}
 	}
-	j.Raw = out
+
+	if length > 0 {
+		j.Raw = out
+	} else {
+		j.Raw = ""
+	}
+
 	return nil
 }
 
