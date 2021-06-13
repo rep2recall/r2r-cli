@@ -29,6 +29,10 @@ jobs:
         with:
           node-version: 12.x
 
+      - name: git-bash
+        if: matrix.platform == 'windows-latest'
+        uses: pkg-src/github-action-git-bash@v1.1
+
       ############ Build app ############
 
       - name: Build app (non-Windows)
@@ -45,9 +49,11 @@ jobs:
 
       - name: Build plugins
         run: |
-          cd packages/app
-          rm -rf ./plugins
-          go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+          bash -c "
+            cd packages/app
+            rm -rf ./plugins
+            go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+          "
 
       ############ Build www ############
 
@@ -109,15 +115,17 @@ jobs:
       - name: Packaging (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
-          mkdir dist
+          bash - c "
+            mkdir dist
 
-          cp packages/app/rep2recall dist/rep2recall
-          cp -r packages/app/plugins dist/plugins
-          cp -r packages/app/public dist/public
+            cp packages/app/rep2recall dist/rep2recall
+            cp -r packages/app/plugins dist/plugins
+            cp -r packages/app/public dist/public
 
-          cd dist
-          tar -cf ../rep2recall-windows.tar *
-      - name: Upload binaries to release (Windows default)
+            cd dist
+            tar -cf ../rep2recall-windows.tar *
+          "
+      - name: Upload binaries to release (Windows)
         if: matrix.platform == 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
