@@ -64,6 +64,7 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
       - name: Build plugins (non-Windows)
+        if: matrix.platform != 'windows-latest'
         run: |
           cd packages/app
           rm -rf ./plugins
