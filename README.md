@@ -34,14 +34,30 @@ Flags:
 
 ## Simple, and file-based
 
-You can see example input in `/data/*.yaml`. You can see that it is Eta / browser-side JavaScript based.
+You can see example input in `/data/*.yaml`. You can see that it is [Eta](https://eta.js.org/) / browser-side JavaScript based. This is further enhanced by plugins in `/packages/app/plugins/*.js`. Golang-based plugins are also possible.
+
+Otherwise, quizzing (and mnemonic) data are generated and stored in `data.db`; with is a SQLite file. The schema can be seen in `/packages/app/db/*.go`.
+
+## Real and latest browser-side JavaScript
+
+You use any JavaScript that latest browsers support. Of course, `<script type="module">` is also supported.
+
+## Better search engine
+
+The search allows not only searching by tags (`tag:`) and data fields (`"key":`), but also by statistics (`srsLevel:0`, `wrongStreak<2`) and by date (`nextReview<-1h`).
+
+Further design of the search engine can be seen in <https://github.com/patarapolw/qsearch>.
 
 ## Dependencies
 
-This app utilizes Chrome DevTools Protocol. Most Windows already has this by default via Microsoft Edge.
+This app utilizes Chrome DevTools Protocol. Most Windows computers already have this by default via Microsoft Edge.
 
-However, in macOS and Linux, you will require either Google Chrome, or Chromium (or Ungoogled Chromium).
+However, in macOS and Linux, you will require to install either Google Chrome, or Chromium (or Ungoogled Chromium).
 
 ## Deployment as a server
 
 You can do that, but an environment variable, `SECRET` will be required, which will be generated in `.env.local` by default.
+
+## Parent project, as a concept
+
+The idea is not new. It came from another project of mine, <https://github.com/rep2recall/rep2recall>.
