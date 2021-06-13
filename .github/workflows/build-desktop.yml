@@ -28,6 +28,15 @@ jobs:
         with:
           node-version: 12.x
 
+      ############ Build www ############
+
+      - name: Build www
+        run: |
+          cd packages/www
+          npm i -g yarn rimraf
+          yarn
+          yarn build
+
       ############ Build app (Windows) ############
 
       - name: Build app (Windows)
@@ -39,7 +48,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: |
           cd packages/app
-          rmdir /s/q plugins
+          rimraf plugins
           go build -buildmode=plugin -o plugins/ __plugins__/gtts
 
       ############ Build app (non-Windows) ############
@@ -54,15 +63,6 @@ jobs:
           cd packages/app
           rm -rf ./plugins
           go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
-
-      ############ Build www ############
-
-      - name: Build www
-        run: |
-          cd packages/www
-          npm i -g yarn
-          yarn
-          yarn build
 
       ############ Packaging (Linux) ############
 
