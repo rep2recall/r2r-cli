@@ -1,0 +1,128 @@
+name: build-desktop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v2
+
+      ############ Set Up ############
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2.1.5
+        with:
+          node-version: 12.x
+
+      ############ Build app ############
+
+      - name: Build app (non-Windows)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          cd packages/app
+          go build --tags "sqlite_fts5" -o rep2recall
+
+      - name: Build app (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          cd packages/app
+          go build --tags "sqlite_fts5" -ldflags="-H windowsgui" -o rep2recall.exe
+
+      - name: Build plugins
+        run: |
+          cd packages/app
+          rm -rf ./plugins
+          go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+
+      ############ Build www ############
+
+      - name: Build www
+        run: |
+          cd packages/www
+          npm i -g yarn
+          yarn
+          yarn build
+
+      ############ Packaging (Linux) ############
+
+      - name: Packaging (Linux)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          mkdir dist
+
+          cp packages/app/rep2recall dist/rep2recall
+          cp -r packages/app/plugins dist/plugins
+          cp -r packages/app/public dist/public
+
+          cd dist
+          tar -czf ../rep2recall-linux.tar.gz *
+      - name: Upload binaries to release (Linux)
+        if: matrix.platform == 'ubuntu-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: rep2recall-linux.tar.gz
+          tag: release-${{ github.ref }}
+          overwrite: true
+          body: Executable for Linux
+
+      ############ Packaging (macOS) ############
+
+      - name: Packaging (macOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          mkdir dist
+
+          cp packages/app/rep2recall dist/rep2recall
+          cp -r packages/app/plugins dist/plugins
+          cp -r packages/app/public dist/public
+
+          cd dist
+          zip -r ../rep2recall-macos.zip *
+      - name: Upload binaries to release (macOS)
+        if: matrix.platform == 'macos-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: rep2recall-macos.zip
+          tag: release-${{ github.ref }}
+          overwrite: true
+          body: Executable for macOS
+
+      ############ Packaging (Windows) ############
+
+      - name: Packaging (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          mkdir dist
+
+          cp packages/app/rep2recall dist/rep2recall
+          cp -r packages/app/plugins dist/plugins
+          cp -r packages/app/public dist/public
+
+          cd dist
+          tar -cf ../rep2recall-windows.tar *
+      - name: Upload binaries to release (Windows default)
+        if: matrix.platform == 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: emojazz-windows.tar
+          tag: release-${{ github.ref }}
+          overwrite: true
+          body: Executable for Windows
