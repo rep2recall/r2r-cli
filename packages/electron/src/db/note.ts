@@ -36,7 +36,7 @@ export class Note {
   attrs = new Collection<NoteAttr>(this)
 }
 
-@Entity()
+@Entity({ tableName: 'note_attr' })
 export class NoteAttr {
   @PrimaryKey()
   id!: number

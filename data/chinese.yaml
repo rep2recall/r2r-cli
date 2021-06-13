@@ -38,7 +38,7 @@ model:
         window.speak = async (s, forceOffline) => {
           if (!forceOffline && navigator.onLine) {
             const audio = new Audio(
-              `/api/plugin/gtts?lang=zh-CN&q=${encodeURIComponent(s)}&secret=${encodeURIComponent(
+              `/api/extra/gtts?lang=zh-CN&q=${encodeURIComponent(s)}&secret=${encodeURIComponent(
                 new URL(location.href).searchParams.get('secret') || ''
               )}`
             )

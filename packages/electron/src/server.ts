@@ -3,15 +3,15 @@ import path from 'path'
 import qs from 'querystring'
 import { PassThrough } from 'stream'
 
+import { MikroORM } from '@mikro-orm/core'
 import fastify, { FastifyInstance } from 'fastify'
 import cors from 'fastify-cors'
 import fastifyStatic from 'fastify-static'
 import pino from 'pino'
 import stripANSIStream from 'string-ansi-stream'
-import { getConnection } from 'typeorm'
 
 import { initDatabase } from './db'
-import { ROOTDIR } from './shared'
+import { ROOTDIR, g } from './shared'
 
 export interface ServerOptions {
   isServer: boolean
@@ -24,6 +24,7 @@ export interface ServerOptions {
 interface ServerInstance {
   app: FastifyInstance
   logger: pino.Logger
+  orm: MikroORM
 }
 
 export class Server implements ServerInstance {
@@ -80,28 +81,31 @@ export class Server implements ServerInstance {
       })
     })
 
-    await initDatabase(path.join(opts.appDir, 'data.db'))
-
-    return new this({
+    g.server = new this({
       app,
-      logger
+      logger,
+      orm: await initDatabase(path.join(opts.appDir, 'data.db'))
     })
+
+    return g.server
   }
 
   app: FastifyInstance
   logger: pino.Logger
+  orm: MikroORM
 
   private isClosed = false
 
   private constructor(it: ServerInstance) {
     this.app = it.app
     this.logger = it.logger
+    this.orm = it.orm
   }
 
   async close() {
     if (!this.isClosed) {
       this.isClosed = true
-      await getConnection().close()
+      await this.orm.close()
       await this.app.close()
     }
   }
