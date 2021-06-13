@@ -4,10 +4,16 @@
             "path": "packages/app"
         },
         {
+            "path": "packages/electron"
+        },
+        {
             "path": "packages/www"
         },
         {
             "path": "."
         }
-    ]
+    ],
+    "settings": {
+        "sort-imports.on-save": true
+    }
 }
