@@ -35,21 +35,21 @@ jobs:
         run: |
           cd packages/app
           go build --tags "sqlite_fts5" -ldflags="-H windowsgui" -o rep2recall.exe
-      - name: Build plugins
+      - name: Build plugins (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
           cd packages/app
-          rmdir /s/q ./plugins
-          go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+          rmdir /s/q plugins
+          go build -buildmode=plugin -o plugins/ __plugins__/gtts
 
       ############ Build app (non-Windows) ############
 
-      - name: Build app
+      - name: Build app (non-Windows)
         if: matrix.platform != 'windows-latest'
         run: |
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
-      - name: Build plugins
+      - name: Build plugins (non-Windows)
         run: |
           cd packages/app
           rm -rf ./plugins
