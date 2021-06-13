@@ -44,12 +44,17 @@ jobs:
         run: |
           cd packages/app
           go build --tags "sqlite_fts5" -ldflags="-H windowsgui" -o rep2recall.exe
+
+      # Not supported in Windows
+      # https://github.com/golang/go/issues/19282
       - name: Build plugins (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
           cd packages/app
           rimraf plugins
-          go build -buildmode=plugin -o plugins/ __plugins__/gtts
+
+          mkdir plugins
+          # go build -buildmode=plugin -o plugins/ __plugins__/gtts
 
       ############ Build app (non-Windows) ############
 
