@@ -123,7 +123,7 @@ jobs:
         run: |
           mkdir dist
 
-          cp packages/app/rep2recall dist/rep2recall
+          cp packages/app/rep2recall.exe dist/rep2recall.exe
           cp /s packages/app/plugins dist/plugins
           cp /s packages/app/public dist/public
 
