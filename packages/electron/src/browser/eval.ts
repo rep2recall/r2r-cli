@@ -2,13 +2,13 @@ import { BrowserWindow, app } from 'electron'
 import puppeteer from 'puppeteer-core'
 import pie from 'puppeteer-in-electron'
 
-interface EvalContext {
+export interface EvalContext<T> {
   js: string
-  output: unknown
+  output?: T
 }
 
 export async function evaluate(
-  scripts: EvalContext[],
+  scripts: EvalContext<any>[],
   opts: {
     plugins?: string[]
     port: number

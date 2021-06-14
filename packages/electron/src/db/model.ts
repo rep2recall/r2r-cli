@@ -43,4 +43,8 @@ export class Model {
   generated: {
     _?: string
   } & Record<string, unknown> = {}
+
+  constructor(m: Partial<Model>) {
+    Object.assign(this, JSON.parse(JSON.stringify(m)))
+  }
 }

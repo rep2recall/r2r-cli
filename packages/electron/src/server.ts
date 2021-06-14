@@ -4,6 +4,7 @@ import qs from 'querystring'
 import { PassThrough } from 'stream'
 
 import { MikroORM } from '@mikro-orm/core'
+import { app as electron } from 'electron'
 import fastify, { FastifyInstance } from 'fastify'
 import cors from 'fastify-cors'
 import fastifyStatic from 'fastify-static'
@@ -18,7 +19,6 @@ export interface ServerOptions {
   debug: boolean
   proxy: boolean
   port: number
-  appDir: string
 }
 
 interface ServerInstance {
@@ -84,7 +84,9 @@ export class Server implements ServerInstance {
     g.server = new this({
       app,
       logger,
-      orm: await initDatabase(path.join(opts.appDir, 'data.db'))
+      orm: await initDatabase(
+        path.join(electron.getPath('userData'), 'data.db')
+      )
     })
 
     return g.server

@@ -7,7 +7,8 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryKey,
-  Property
+  Property,
+  Unique
 } from '@mikro-orm/core'
 import shortUUID from 'short-uuid'
 
@@ -37,27 +38,12 @@ export class Note {
 }
 
 @Entity({ tableName: 'note_attr' })
+@Unique({ properties: ['note', 'key'] })
 export class NoteAttr {
-  @PrimaryKey()
-  id!: number
-
-  @Property({
-    type: DateType
-  })
-  createdAt: Date = new Date()
-
-  @Property({
-    type: DateType,
-    onUpdate: () => new Date()
-  })
-  updatedAt: Date = new Date()
-
-  @ManyToOne(() => Note)
-  @Index()
+  @ManyToOne(() => Note, { fieldName: 'note_id' })
   note!: Note
 
   @Property()
-  @Index()
   key!: string
 
   @Property({
@@ -65,4 +51,8 @@ export class NoteAttr {
   })
   @Index({ type: 'text' })
   data!: unknown
+
+  constructor(na: NoteAttr) {
+    Object.assign(this, na)
+  }
 }
