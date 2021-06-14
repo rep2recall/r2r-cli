@@ -95,17 +95,8 @@ func LoadStruct(f string) (LoadedStruct, error) {
 }
 
 func Load(tx *gorm.DB, f string, opts LoadOptions) error {
-	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir(), f))
+	loadFile, e := LoadStruct(f)
 	if e != nil {
-		return e
-	}
-
-	var loadFile LoadedStruct
-	if e := yaml.Unmarshal(b, &loadFile); e != nil {
-		return e
-	}
-
-	if e := validate.Struct(&loadFile); e != nil {
 		return e
 	}
 

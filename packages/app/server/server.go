@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -79,8 +80,10 @@ func Serve(opts ServerOptions) Server {
 	))
 	app.Use(logger.New(
 		logger.Config{
-			Output: f,
-			Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams} ${body} ${resBody}\n",
+			Output: filterUTF8{
+				Target: f,
+			},
+			Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams}\t${body}\t${resBody}\n",
 		},
 	))
 
@@ -159,4 +162,34 @@ func (s Server) Close() {
 	}
 
 	s.Server.Close()
+}
+
+type filterUTF8 struct {
+	Target *os.File
+}
+
+func (f filterUTF8) Write(p []byte) (n int, err error) {
+	segs := strings.Split(strings.TrimRight(string(p), "\n"), "\t")
+
+	s := ""
+	if len(segs) == 3 {
+		if !isObject(segs[1]) {
+			segs[1] = ""
+		}
+		if !isObject(segs[2]) {
+			segs[2] = ""
+		}
+		s = strings.Join(segs, "\t")
+	} else {
+		s = segs[0]
+	}
+	if s[len(s)-1] != '\n' {
+		s += "\n"
+	}
+
+	return f.Target.Write([]byte(s))
+}
+
+func isObject(s string) bool {
+	return len(s) >= 2 && s[0] == '{' && s[len(s)-1] == '}'
 }
