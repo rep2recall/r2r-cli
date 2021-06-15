@@ -137,7 +137,15 @@ import 'quill/dist/quill.snow.css'
 let quill: Quill
 
 export default defineComponent({
-  props: ['session', 'standalone'],
+  props: {
+    session: {
+      type: String,
+      required: true
+    },
+    standalone: {
+      type: Boolean
+    }
+  },
   emits: ['end'],
   setup(props) {
     const side = ref('front')

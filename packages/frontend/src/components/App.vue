@@ -132,25 +132,15 @@
       </div>
     </div>
 
-    <div id="Leech" class="card mt-4" v-show="leechItems.length">
+    <div id="Leech" class="card mt-4" v-show="!!stat.leech">
       <header class="card-header clickable" @click="isLeechOpen = !isLeechOpen">
         <h2 class="card-header-title">Leeches</h2>
         <div class="card-header-icon">
           <button class="delete" type="button"></button>
         </div>
       </header>
-      <div v-show="isLeechOpen" class="card-content">
-        <div class="columns">
-          <div class="column is-4" v-for="id in leechItems" :key="id">
-            <iframe
-              class="leech-iframe"
-              :src="`/card?side=front&id=${id}&secret=${secret}`"
-            ></iframe>
-          </div>
 
-          <div ref="scrollTrigger"></div>
-        </div>
-      </div>
+      <leech-content v-if="isLeechOpen" :q="q" />
     </div>
 
     <div v-if="isQuiz" class="modal is-active">
@@ -187,15 +177,16 @@
 
 <script lang="ts">
 import { ref, watch, defineComponent, onBeforeMount } from 'vue'
-import { makeUseInfiniteScroll } from 'vue-use-infinite-scroll'
 
 import { api } from '@/assets/api'
 
 import Quiz from './Quiz.vue'
+import LeechContent from './LeechContent.vue'
 
 export default defineComponent({
   components: {
-    Quiz
+    Quiz,
+    LeechContent
   },
   setup() {
     const q = ref(
@@ -212,40 +203,14 @@ export default defineComponent({
       leech: 0,
       next: ''
     })
-    const leechItems = ref([] as string[])
     const isLeechOpen = ref(false)
     const isQuiz = ref(false)
     const sessionId = ref('')
 
-    const useInfiniteScroll = makeUseInfiniteScroll({})
-    const scrollTrigger = ref(null as any)
-    const scrollRef = useInfiniteScroll(scrollTrigger)
-
-    watch(
-      scrollRef,
-      page => {
-        const limit = 6
-
-        api
-          .get<{
-            result: string[]
-          }>('/api/quiz/leech', {
-            params: {
-              page,
-              limit,
-              q: q.value
-            }
-          })
-          .then(({ data }) => {
-            leechItems.value = [...leechItems.value, ...data.result]
-          })
-      },
-      { immediate: true }
-    )
-
     const doFilter = () => {
-      leechItems.value = []
-      scrollRef.value = Number(!!scrollRef.value)
+      if (isLeechOpen.value) {
+        isLeechOpen.value = false
+      }
 
       api
         .get<{
@@ -295,8 +260,6 @@ export default defineComponent({
       doFilter,
       stat,
       doQuiz,
-      leechItems,
-      scrollTrigger,
       isLeechOpen,
       isQuiz,
       sessionId,
@@ -352,21 +315,6 @@ export default defineComponent({
 #Leech {
   .clickable {
     cursor: pointer;
-  }
-
-  .card-content {
-    max-height: 400px;
-    overflow: auto;
-
-    > .columns {
-      flex-wrap: wrap;
-
-      .leech-iframe {
-        height: 200px;
-        width: 100%;
-        border: 1px solid lightgray;
-      }
-    }
   }
 }
 

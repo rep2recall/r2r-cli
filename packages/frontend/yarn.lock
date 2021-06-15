@@ -39,10 +39,10 @@
   resolved "https://registry.yarnpkg.com/@emmetio/scanner/-/scanner-1.0.0.tgz#065b2af6233fe7474d44823e3deb89724af42b5f"
   integrity sha512-8HqW8EVqjnCmWXVpqAOZf+EGESdkR27odcMMMGefgKXtar00SoYNSryGv//TELI4T3QFsECo78p+0lmalk/CFA==
 
-"@patarapolw/vite-plugin-mpa@^1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@patarapolw/vite-plugin-mpa/-/vite-plugin-mpa-1.1.1.tgz#73c4772d928d5928c22fccbfb606b83aa6ce330b"
-  integrity sha512-3J+sK9YzwCRf0N4IGr4cSxcXZh9QKAMyCCGsW8w8s88Exw5lbOooo9jLfrFUETkZfUYZvBw+R0XsmpFToSlnBQ==
+"@patarapolw/vite-plugin-mpa@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@patarapolw/vite-plugin-mpa/-/vite-plugin-mpa-1.1.2.tgz#b4e33ea32d01d3739528af309eed1e49d6ef0e1c"
+  integrity sha512-eO2kICvVEMoKR801hMtsDof7oiuKrnwxgEwRy//DbHoQsxSw5+atI6WJi2BDqlbf/DrT0H/uYSX4o2pioY+B9Q==
   dependencies:
     connect-history-api-fallback "1.6.0"
     shelljs "0.8.4"
