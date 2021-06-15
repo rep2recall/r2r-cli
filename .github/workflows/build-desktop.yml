@@ -26,13 +26,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2.1.5
         with:
-          node-version: 12.x
+          node-version: 14.x
 
-      ############ Build www ############
+      ############ Build frontend ############
 
-      - name: Build www
+      - name: Build frontend
         run: |
-          cd packages/www
+          cd packages/frontend
           npm i -g yarn rimraf
           yarn
           yarn build

@@ -9,7 +9,7 @@
     </div>
     <iframe
       v-else-if="card.id"
-      :src="`/card.html?side=${side}&id=${card.id}&secret=${secret}`"
+      :src="`/card?side=${side}&id=${card.id}&secret=${secret}`"
       style="border-bottom: 1px solid rgba(128, 128, 128, 0.7)"
     ></iframe>
     <div v-else>

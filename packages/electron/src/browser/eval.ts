@@ -19,7 +19,7 @@ export async function evaluate(
   const browser = await pie.connect(app, puppeteer)
 
   const window = new BrowserWindow()
-  await window.loadURL(`http://localhost:${opts.port}/script.html`)
+  await window.loadURL(`http://localhost:${opts.port}/script`)
 
   const page = await pie.getPage(browser, window)
 

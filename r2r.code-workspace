@@ -10,9 +10,6 @@
             "path": "packages/frontend"
         },
         {
-            "path": "packages/www"
-        },
-        {
             "path": "."
         }
     ],

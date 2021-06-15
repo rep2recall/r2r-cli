@@ -17,6 +17,7 @@
     "vue-use-infinite-scroll": "^0.0.3"
   },
   "devDependencies": {
+    "@patarapolw/vite-plugin-mpa": "^1.1.0",
     "@types/node": "^15.12.2",
     "@types/quill": "^2.0.8",
     "@vitejs/plugin-vue": "^1.2.3",
@@ -25,6 +26,7 @@
     "sass": "^1.35.0",
     "typescript": "^4.3.2",
     "vite": "^2.3.7",
+    "vite-plugin-html-template": "^1.0.4",
     "vite-plugin-mpa": "^1.0.2",
     "vue-tsc": "^0.0.24"
   },

@@ -160,7 +160,7 @@
         <div class="columns" style="flex-wrap: wrap">
           <div class="column is-4" v-for="id in leechItems" :key="id">
             <iframe
-              :src="`/card.html?side=front&id=${id}&secret=${secret}`"
+              :src="`/card?side=front&id=${id}&secret=${secret}`"
               style="height: 200px; width: 100%; border: 1px solid lightgray"
               sandbox="allow-scripts allow-same-origin allow-forms"
             ></iframe>

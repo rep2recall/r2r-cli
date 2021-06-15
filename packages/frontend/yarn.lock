@@ -20,6 +20,15 @@
     "@babel/helper-validator-identifier" "^7.14.5"
     to-fast-properties "^2.0.0"
 
+"@patarapolw/vite-plugin-mpa@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@patarapolw/vite-plugin-mpa/-/vite-plugin-mpa-1.1.0.tgz#146afb304485fbb718a7361501f10e73ba6927d0"
+  integrity sha512-Z1BovmjPGFvUVO0Y0tURR4ViVd5j2MS9FRDbWv0AdraO8qB7kZ7lPcHshrS29A6EqMxnq9/svv9f3sTkcTPJwA==
+  dependencies:
+    connect-history-api-fallback "1.6.0"
+    shelljs "0.8.4"
+    yargs "16.2.0"
+
 "@types/node@^15.12.2":
   version "15.12.2"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-15.12.2.tgz#1f2b42c4be7156ff4a6f914b2fb03d05fa84e38d"
@@ -978,6 +987,13 @@ util-deprecate@^1.0.2, util-deprecate@~1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=
+
+vite-plugin-html-template@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/vite-plugin-html-template/-/vite-plugin-html-template-1.0.4.tgz#d24eeab83d2d5ea40a6b7de6db6faf70d2e0f64a"
+  integrity sha512-LvaioUhK8LYiPnNl/4wSffvpCsgBVoUTGlPNEISv/4uvq6I7gW0Lg/ZaiP7OMwGauWQvGqLTAxxQ/U6OInWtvA==
+  dependencies:
+    shelljs "0.8.4"
 
 vite-plugin-mpa@^1.0.2:
   version "1.0.2"
