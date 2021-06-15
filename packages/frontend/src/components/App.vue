@@ -176,7 +176,7 @@
 </template>
 
 <script lang="ts">
-import { ref, watch, defineComponent, onBeforeMount } from 'vue'
+import { ref, watch, defineComponent, onBeforeMount, nextTick } from 'vue'
 
 import { api } from '@/assets/api'
 
@@ -208,10 +208,6 @@ export default defineComponent({
     const sessionId = ref('')
 
     const doFilter = () => {
-      if (isLeechOpen.value) {
-        isLeechOpen.value = false
-      }
-
       api
         .get<{
           new: number
@@ -226,6 +222,13 @@ export default defineComponent({
         })
         .then(({ data }) => {
           stat.value = data
+
+          if (isLeechOpen.value) {
+            isLeechOpen.value = false
+            nextTick(() => {
+              isLeechOpen.value = true
+            })
+          }
         })
     }
 
