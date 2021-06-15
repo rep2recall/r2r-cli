@@ -10,16 +10,7 @@
         </div>
       </div>
 
-      <div
-        class="mx-4"
-        style="
-          display: grid;
-          grid-template-columns: minmax(80px, 1.5fr) 1fr 1fr;
-          gap: 1em;
-          max-width: 800px;
-          margin: 0 auto !important;
-        "
-      >
+      <div id="State">
         <div class="field">
           <div class="control check-list">
             <label class="checkbox">
@@ -28,10 +19,10 @@
                 name="learning"
                 :checked="state.includes('new')"
                 @change="
-                  (ev) =>
+                  ev =>
                     (state = ev.target.checked
                       ? [...state, 'new']
-                      : state.filter((r) => r !== 'new'))
+                      : state.filter(r => r !== 'new'))
                 "
               />
               New
@@ -42,10 +33,10 @@
                 name="learning"
                 :checked="state.includes('learning')"
                 @change="
-                  (ev) =>
+                  ev =>
                     (state = ev.target.checked
                       ? [...state, 'learning']
-                      : state.filter((r) => r !== 'learning'))
+                      : state.filter(r => r !== 'learning'))
                 "
               />
               Learning
@@ -56,10 +47,10 @@
                 name="learning"
                 :checked="state.includes('graduated')"
                 @change="
-                  (ev) =>
+                  ev =>
                     (state = ev.target.checked
                       ? [...state, 'graduated']
-                      : state.filter((r) => r !== 'graduated'))
+                      : state.filter(r => r !== 'graduated'))
                 "
               />
               Graduated
@@ -67,32 +58,32 @@
           </div>
         </div>
 
-        <div class="field" style="justify-self: end; padding-right: 1em">
+        <div class="field">
           <label class="checkbox">
             <input
               type="checkbox"
               :checked="!state.includes('due')"
               @change="
-                (ev) =>
+                ev =>
                   (state = !ev.target.checked
                     ? [...state, 'due']
-                    : state.filter((r) => r !== 'due'))
+                    : state.filter(r => r !== 'due'))
               "
             />
             Include undue
           </label>
         </div>
 
-        <div class="field" style="justify-self: end; padding-right: 1em">
+        <div class="field">
           <label class="checkbox">
             <input
               type="checkbox"
               :checked="state.includes('leech')"
               @change="
-                (ev) =>
+                ev =>
                   (state = ev.target.checked
                     ? [...state, 'leech']
-                    : state.filter((r) => r !== 'leech'))
+                    : state.filter(r => r !== 'leech'))
               "
             />
             Include leeches
@@ -142,27 +133,18 @@
     </div>
 
     <div id="Leech" class="card mt-4" v-show="leechItems.length">
-      <header
-        class="card-header"
-        @click="isLeechOpen = !isLeechOpen"
-        style="cursor: pointer"
-      >
+      <header class="card-header clickable" @click="isLeechOpen = !isLeechOpen">
         <h2 class="card-header-title">Leeches</h2>
         <div class="card-header-icon">
           <button class="delete" type="button"></button>
         </div>
       </header>
-      <div
-        v-show="isLeechOpen"
-        class="card-content"
-        style="max-height: 400px; overflow: auto"
-      >
-        <div class="columns" style="flex-wrap: wrap">
+      <div v-show="isLeechOpen" class="card-content">
+        <div class="columns">
           <div class="column is-4" v-for="id in leechItems" :key="id">
             <iframe
+              class="leech-iframe"
               :src="`/card?side=front&id=${id}&secret=${secret}`"
-              style="height: 200px; width: 100%; border: 1px solid lightgray"
-              sandbox="allow-scripts allow-same-origin allow-forms"
             ></iframe>
           </div>
 
@@ -173,10 +155,7 @@
 
     <div v-if="isQuiz" class="modal is-active">
       <div class="modal-background"></div>
-      <div
-        class="modal-card"
-        style="width: 600px; max-width: 1200px; height: 100%"
-      >
+      <div class="modal-card">
         <header class="modal-card-head">
           <p class="modal-card-title">Quiz</p>
           <button
@@ -190,7 +169,7 @@
             "
           ></button>
         </header>
-        <section class="modal-card-body" style="height: 100%">
+        <section class="modal-card-body">
           <Quiz
             :session="sessionId"
             @end="
@@ -216,7 +195,7 @@ import Quiz from './Quiz.vue'
 
 export default defineComponent({
   components: {
-    Quiz,
+    Quiz
   },
   setup() {
     const q = ref(
@@ -231,7 +210,7 @@ export default defineComponent({
       new: 0,
       due: 0,
       leech: 0,
-      next: '',
+      next: ''
     })
     const leechItems = ref([] as string[])
     const isLeechOpen = ref(false)
@@ -244,7 +223,7 @@ export default defineComponent({
 
     watch(
       scrollRef,
-      (page) => {
+      page => {
         const limit = 6
 
         api
@@ -254,8 +233,8 @@ export default defineComponent({
             params: {
               page,
               limit,
-              q: q.value,
-            },
+              q: q.value
+            }
           })
           .then(({ data }) => {
             leechItems.value = [...leechItems.value, ...data.result]
@@ -277,8 +256,8 @@ export default defineComponent({
         }>('/api/quiz/stat', {
           params: {
             q: q.value,
-            state: state.value.join(','),
-          },
+            state: state.value.join(',')
+          }
         })
         .then(({ data }) => {
           stat.value = data
@@ -293,8 +272,8 @@ export default defineComponent({
         }>('/api/quiz/init', undefined, {
           params: {
             q: q.value,
-            state: state.value.join(','),
-          },
+            state: state.value.join(',')
+          }
         })
         .then(({ data }) => {
           sessionId.value = data.id
@@ -321,40 +300,85 @@ export default defineComponent({
       isLeechOpen,
       isQuiz,
       sessionId,
-      secret: new URL(location.href).searchParams.get('secret'),
+      secret: new URL(location.href).searchParams.get('secret')
     }
-  },
+  }
 })
 </script>
 
-<style lang="scss">
-#Stat .card-content {
+<style lang="scss" scoped>
+#State {
   display: grid;
-  justify-content: center;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(80px, 1.5fr) 1fr 1fr;
+  gap: 1em;
+  max-width: 800px;
+  margin: 0 auto;
 
-  .columns {
-    margin: 0;
+  .field:not(:first-child) {
+    justify-self: end;
+    padding-right: 1em;
   }
 
-  [data-stat] {
-    display: inline-block;
-    width: 1.5em;
-    text-align: right;
+  .check-list {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 1em;
 
-    label + & {
+    @media screen and (max-width: 630px) {
+      grid-auto-flow: row;
+    }
+  }
+}
+
+#Stat {
+  .card-content {
+    display: grid;
+    justify-content: center;
+    grid-template-columns: 1fr auto;
+
+    .columns {
+      margin: 0;
+    }
+
+    [data-stat] {
+      display: inline-block;
+      width: 1.5em;
+      text-align: right;
       margin-left: 0.5em;
     }
   }
 }
 
-.check-list {
-  display: grid;
-  grid-auto-flow: column;
-  gap: 1em;
+#Leech {
+  .clickable {
+    cursor: pointer;
+  }
 
-  @media screen and (max-width: 630px) {
-    grid-auto-flow: row;
+  .card-content {
+    max-height: 400px;
+    overflow: auto;
+
+    > .columns {
+      flex-wrap: wrap;
+
+      .leech-iframe {
+        height: 200px;
+        width: 100%;
+        border: 1px solid lightgray;
+      }
+    }
+  }
+}
+
+.modal {
+  .modal-card {
+    width: 600px;
+    max-width: 1200px;
+    height: 100%;
+  }
+
+  .modal-card-body {
+    height: 100%;
   }
 }
 </style>

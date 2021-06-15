@@ -17,18 +17,18 @@
     "vue-use-infinite-scroll": "^0.0.3"
   },
   "devDependencies": {
-    "@patarapolw/vite-plugin-mpa": "^1.1.0",
+    "@patarapolw/vite-plugin-mpa": "^1.1.1",
     "@types/node": "^15.12.2",
     "@types/quill": "^2.0.8",
     "@vitejs/plugin-vue": "^1.2.3",
-    "@vue/compiler-sfc": "^3.0.5",
+    "@vue/compiler-sfc": "^3.1.1",
     "import-sort-parser-typescript": "^6.0.0",
     "sass": "^1.35.0",
     "typescript": "^4.3.2",
     "vite": "^2.3.7",
     "vite-plugin-html-template": "^1.0.4",
     "vite-plugin-mpa": "^1.0.2",
-    "vue-tsc": "^0.0.24"
+    "vue-tsc": "^0.1.7"
   },
   "importSort": {
     ".js, .ts": {
