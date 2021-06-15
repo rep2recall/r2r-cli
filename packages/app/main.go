@@ -77,7 +77,7 @@ func main() {
 				b := browser.Browser{
 					ExecPath: browserOfChoice,
 				}
-				b.AppMode(fmt.Sprintf("http://localhost:%d/app.html?secret=%s", port, shared.ServerSecret()), browser.IsMaximized())
+				b.AppMode(fmt.Sprintf("http://localhost:%d/app?secret=%s", port, shared.ServerSecret()), browser.IsMaximized())
 
 				s.Close()
 			}
@@ -274,7 +274,7 @@ func main() {
 			}
 			b.AppMode(
 				fmt.Sprintf(
-					"http://localhost:%d/quiz.html?secret=%s&q=%s&files=%s",
+					"http://localhost:%d/quiz?secret=%s&q=%s&files=%s",
 					port,
 					shared.ServerSecret(),
 					url.QueryEscape(filter),
