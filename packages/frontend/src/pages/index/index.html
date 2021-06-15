@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rep2recall</title>
+
+    <link rel="stylesheet" href="/node_modules/bulma/css/bulma.min.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      form[action] {
+        text-align: center;
+      }
+
+      input[type='password'] {
+        background-color: rgba(211, 211, 211, 0.3);
+      }
+
+      input::placeholder {
+        color: black !important;
+      }
+    </style>
+  </head>
+  <body>
+    <form class="field has-addons" action="/app.html" method="get">
+      <div class="control">
+        <input
+          class="input"
+          type="password"
+          name="secret"
+          id="secret"
+          placeholder="Please type-in server secret"
+        />
+      </div>
+      <div class="control">
+        <button class="button is-primary" type="submit">Submit</button>
+      </div>
+    </form>
+
+    <script src="/src/pages/index/main.ts" type="module"></script>
+  </body>
+</html>
