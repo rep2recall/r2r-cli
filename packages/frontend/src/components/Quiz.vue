@@ -1,31 +1,18 @@
 <template>
-  <div id="Quiz" style="display: grid; grid-template-rows: 1fr auto">
-    <div
-      v-if="side === 'mnemonic'"
-      id="Mnemonic"
-      style="display: flex; flex-direction: column"
-    >
+  <div id="Quiz">
+    <small> ({{ index + 1 }}/{{ cards.length }}) </small>
+    <div v-if="side === 'mnemonic'" id="Mnemonic">
       <div class="quill"></div>
     </div>
     <iframe
       v-else-if="card.id"
-      :src="`/card.html?side=${side}&id=${card.id}&secret=${secret}`"
-      style="border-bottom: 1px solid rgba(128, 128, 128, 0.7)"
+      :src="`/card?side=${side}&id=${card.id}&secret=${secret}`"
     ></iframe>
     <div v-else>
       <p>No quiz pending.</p>
     </div>
 
-    <footer
-      style="
-        display: grid;
-        grid-template-columns: 100px 1fr 100px;
-        align-items: center;
-        overflow: auto;
-        min-height: 120px;
-        max-height: 30vh;
-      "
-    >
+    <footer>
       <div>
         <button
           :disabled="!(index > 0)"
@@ -111,7 +98,7 @@
         </div>
       </div>
 
-      <div style="margin-left: auto">
+      <div class="buttons-right">
         <button
           v-if="index < cards.length - 2"
           class="button has-background-grey-lighter"
@@ -125,7 +112,12 @@
           v-else-if="side != 'front' && autoclose"
           class="button is-success"
           type="button"
-          @click="() => $emit('end') && endQuiz()"
+          @click="
+            () => {
+              $emit('end')
+              endQuiz()
+            }
+          "
         >
           End Quiz
         </button>
@@ -137,14 +129,23 @@
 <script lang="ts">
 import { defineComponent, nextTick, onMounted, ref, watch } from 'vue'
 import Quill from 'quill'
-import { api } from './api'
+
+import { api } from '@/assets/api'
 
 import 'quill/dist/quill.snow.css'
 
 let quill: Quill
 
 export default defineComponent({
-  props: ['session', 'standalone'],
+  props: {
+    session: {
+      type: String,
+      required: true
+    },
+    standalone: {
+      type: Boolean
+    }
+  },
   emits: ['end'],
   setup(props) {
     const side = ref('front')
@@ -167,14 +168,14 @@ export default defineComponent({
           params: {
             id: c.id,
             dSrsLevel: c.dSrsLevel,
-            session: props.session,
-          },
+            session: props.session
+          }
         })
         .then(() => {
           cards.value = [
             ...cards.value.slice(0, i),
             c,
-            ...cards.value.slice(i + 1),
+            ...cards.value.slice(i + 1)
           ]
           side.value = 'front'
           index.value = i + 1
@@ -195,8 +196,8 @@ export default defineComponent({
           isMarked: boolean
         }>('/api/card/toggleMarked', undefined, {
           params: {
-            id: c.id,
-          },
+            id: c.id
+          }
         })
         .then(({ data }) => {
           c.isMarked = data.isMarked
@@ -204,7 +205,7 @@ export default defineComponent({
           cards.value = [
             ...cards.value.slice(0, i),
             c,
-            ...cards.value.slice(i + 1),
+            ...cards.value.slice(i + 1)
           ]
         })
     }
@@ -215,7 +216,7 @@ export default defineComponent({
       // }
     }
 
-    watch(side, (side) => {
+    watch(side, side => {
       const i = index.value
       const c = cards.value[i]
 
@@ -228,13 +229,13 @@ export default defineComponent({
           api
             .get('/api/card/mnemonic', {
               params: {
-                id: c.id,
-              },
+                id: c.id
+              }
             })
-            .then((r) => {
+            .then(r => {
               quill = new Quill('#Mnemonic .quill', {
                 placeholder: 'Compose a memorable mnemonic...',
-                theme: 'snow',
+                theme: 'snow'
               })
 
               quill.setContents(r.data)
@@ -242,8 +243,8 @@ export default defineComponent({
                 console.log(quill.getContents())
                 api.put('/api/card/mnemonic', quill.getContents(), {
                   params: {
-                    id: c.id,
-                  },
+                    id: c.id
+                  }
                 })
               })
 
@@ -262,8 +263,8 @@ export default defineComponent({
           }[]
         }>('/api/quiz/session', {
           params: {
-            session: props.session,
-          },
+            session: props.session
+          }
         })
         .then(({ data }) => {
           cards.value = data.result
@@ -279,7 +280,7 @@ export default defineComponent({
       endQuiz,
       dSrsLevel,
       toggleMark,
-      autoclose: !props.standalone,
+      autoclose: !props.standalone
     }
   },
   computed: {
@@ -289,31 +290,57 @@ export default defineComponent({
       isMarked?: boolean
     } {
       return this.cards[this.index] || {}
-    },
-  },
+    }
+  }
 })
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 #Quiz {
   height: 100%;
   width: 100%;
+  display: grid;
+  grid-template-rows: 0 1fr auto;
+
+  small:first-child {
+    z-index: 5;
+    margin-left: auto;
+  }
+
+  #Mnemonic {
+    display: flex;
+    flex-direction: column;
+  }
 
   iframe {
     height: 100%;
     width: 100%;
     border: none;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.7);
   }
 
-  button {
-    margin: 0.5em;
-  }
+  footer {
+    display: grid;
+    grid-template-columns: 100px 1fr 100px;
+    align-items: center;
+    overflow: auto;
+    min-height: 120px;
+    max-height: 30vh;
 
-  .buttons {
-    margin: 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    button {
+      margin: 0.5em;
+    }
+
+    .buttons {
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .buttons-right {
+      margin-left: auto;
+    }
   }
 }
 </style>

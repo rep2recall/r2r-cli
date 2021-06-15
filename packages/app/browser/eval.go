@@ -53,7 +53,7 @@ func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
 	}
 
 	actions := []chromedp.Action{
-		chromedp.Navigate(fmt.Sprintf("http://localhost:%d/script.html", opts.Port)),
+		chromedp.Navigate(fmt.Sprintf("http://localhost:%d/script", opts.Port)),
 		chromedp.WaitReady("body"),
 		chromedp.EvaluateAsDevTools(fmt.Sprintf(`
 		s = document.createElement('script');

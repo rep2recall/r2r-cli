@@ -5,29 +5,35 @@
 
 <script lang="ts">
 import { defineAsyncComponent, defineComponent, ref } from 'vue'
-import { initAPI } from './api'
+
+import { initAPI } from '@/assets/api'
 
 export default defineComponent({
   components: {
     App: defineAsyncComponent(() => import('./App.vue')),
-    Quiz: defineAsyncComponent(() => import('./Quiz.vue')),
+    Quiz: defineAsyncComponent(() => import('./Quiz.vue'))
   },
-  props: ['type'],
-  setup: (props) => {
+  props: {
+    type: {
+      type: String,
+      required: true
+    }
+  },
+  setup: props => {
     const opts = ref<{
       type: string
       ok?: boolean
     }>({
-      type: props.type,
+      type: props.type
     })
 
-    initAPI().then((data) => {
+    initAPI().then(data => {
       opts.value = Object.assign(opts.value, data)
     })
 
     return {
-      opts,
+      opts
     }
-  },
+  }
 })
 </script>

@@ -1,6 +1,6 @@
+import Init from '@/components/Init.vue'
 import { createApp } from 'vue'
-import Init from './assets/Init.vue'
 
 createApp(Init, {
-  type: 'App'
+  type: 'App',
 }).mount('#App')

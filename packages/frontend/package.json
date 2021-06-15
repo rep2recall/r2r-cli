@@ -1,0 +1,39 @@
+{
+  "name": "@rep2recall/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "lint": "vue-tsc --noEmit",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "bulma": "^0.9.2",
+    "eta": "^1.12.2",
+    "quill": "^1.3.7",
+    "vue": "^3.0.5",
+    "vue-use-infinite-scroll": "^0.0.3"
+  },
+  "devDependencies": {
+    "@patarapolw/vite-plugin-mpa": "^1.1.2",
+    "@types/node": "^15.12.2",
+    "@types/quill": "^2.0.8",
+    "@vitejs/plugin-vue": "^1.2.3",
+    "@vue/compiler-sfc": "^3.1.1",
+    "import-sort-parser-typescript": "^6.0.0",
+    "sass": "^1.35.0",
+    "typescript": "^4.3.2",
+    "vite": "^2.3.7",
+    "vite-plugin-html-template": "^1.0.4",
+    "vite-plugin-mpa": "^1.0.2",
+    "vue-tsc": "^0.1.7"
+  },
+  "importSort": {
+    ".js, .ts": {
+      "parser": "typescript",
+      "style": "module"
+    }
+  }
+}

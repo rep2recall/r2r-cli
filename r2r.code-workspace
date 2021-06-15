@@ -4,10 +4,13 @@
             "path": "packages/app"
         },
         {
-            "path": "packages/www"
+            "path": "packages/frontend"
         },
         {
             "path": "."
         }
-    ]
+    ],
+    "settings": {
+        "sort-imports.on-save": true
+    }
 }

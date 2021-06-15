@@ -1,6 +1,6 @@
+import { api, initAPI } from '@/assets/api'
+import Init from '@/components/Init.vue'
 import { createApp } from 'vue'
-import Init from './assets/Init.vue'
-import { api, initAPI } from './assets/api'
 
 async function main() {
   const { ok } = await initAPI()
@@ -23,7 +23,7 @@ async function main() {
   createApp(Init, {
     type: 'Quiz',
     session: data.id,
-    standalone: true
+    standalone: true,
   }).mount('#Quiz')
 }
 

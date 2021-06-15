@@ -5,8 +5,9 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blank - Rep2recall</title>
+    <title>Quiz - Rep2recall</title>
 
+    <link rel="stylesheet" href="/node_modules/bulma/css/bulma.min.css" />
     <style>
       html,
       body {
@@ -14,15 +15,11 @@
         height: 100%;
         width: 100%;
       }
-
-      body {
-        margin: 0;
-        padding: 1em;
-      }
     </style>
   </head>
-  <body>
-    <div id="Card"></div>
-    <script src="/card.js" type="module"></script>
+  <body class="container" style="padding: 1em">
+    <div id="Quiz"></div>
+
+    <script src="/src/pages/quiz/main.ts" type="module"></script>
   </body>
 </html>
