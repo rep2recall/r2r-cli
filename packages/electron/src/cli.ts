@@ -1,4 +1,7 @@
+import ON_DEATH from 'death'
 import yargs from 'yargs'
+
+import { Server } from './server'
 
 const { argv } = yargs
   .scriptName('rep2recall')
@@ -82,6 +85,25 @@ const { argv } = yargs
   })
   .help()
 
-console.log(argv)
+async function main() {
+  console.log(argv)
 
-process.exit(0)
+  if (argv._[0] === 'server') {
+    const srv = await Server.init({
+      isServer: true,
+      debug: false,
+      proxy: false,
+      port: argv.port as number,
+    })
+
+    ON_DEATH(() => {
+      srv.close()
+    })
+
+    return
+  }
+
+  process.exit(0)
+}
+
+main()

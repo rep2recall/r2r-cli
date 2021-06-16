@@ -9,7 +9,7 @@ import fastify, { FastifyInstance } from 'fastify'
 import cors from 'fastify-cors'
 import fastifyStatic from 'fastify-static'
 import pino from 'pino'
-import stripANSIStream from 'string-ansi-stream'
+import stripANSIStream from 'strip-ansi-stream'
 
 import { initDatabase } from './db'
 import { ROOTDIR, g } from './shared'
@@ -27,8 +27,21 @@ interface ServerInstance {
   orm: MikroORM
 }
 
+function setAppName(APP_NAME = 'rep2recall') {
+  electron.setName(APP_NAME)
+  electron.setPath('userData', path.join(electron.getPath('appData'), APP_NAME))
+}
+
+electron.whenReady().then(() => {
+  setAppName()
+})
+
 export class Server implements ServerInstance {
   static async init(opts: ServerOptions): Promise<Server> {
+    setAppName()
+
+    console.log('userData path is ', electron.getPath('userData'))
+
     const logThrough = new PassThrough()
     const logger = pino(
       {

@@ -40,6 +40,9 @@ export class Note {
 @Entity({ tableName: 'note_attr' })
 @Unique({ properties: ['note', 'key'] })
 export class NoteAttr {
+  @PrimaryKey()
+  id: string = shortUUID.generate()
+
   @ManyToOne(() => Note, { fieldName: 'note_id' })
   note!: Note
 
@@ -52,7 +55,7 @@ export class NoteAttr {
   @Index({ type: 'text' })
   data!: unknown
 
-  constructor(na: NoteAttr) {
+  constructor(na: Omit<NoteAttr, 'id'>) {
     Object.assign(this, na)
   }
 }

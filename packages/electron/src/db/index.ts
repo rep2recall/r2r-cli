@@ -13,8 +13,10 @@ export async function initDatabase(filename: string) {
     type: MONGO_URI ? 'mongo' : 'sqlite',
     dbName: MONGO_URI ? 'rep2recall' : filename,
     clientUrl: MONGO_URI,
-    implicitTransactions: true,
-    ensureIndexes: true
+    ...(MONGO_URI ? {
+      implicitTransactions: true,
+      ensureIndexes: true
+    } : {})
   })
 
   if (!MONGO_URI) {
@@ -24,7 +26,7 @@ export async function initDatabase(filename: string) {
       "key",
       "data",
       content=note_attr,
-      content_rowid=id,
+      content_rowid=rowid,
       tokenize=porter
     );
 

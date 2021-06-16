@@ -1,1 +1,1 @@
-declare module 'string-ansi-stream'
+declare module 'strip-ansi-stream'
