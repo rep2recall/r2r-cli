@@ -29,13 +29,17 @@ jobs:
       - name: Compare git
         id: compare-git
         run: |
-          # rm -rf ~/cache/frontend
+          export CACHE_PATH=~/cache/frontend
+          export TARGET=packages/frontend/
+          export CACHE_VAR=REBUILD_FRONTEND
 
-          if [ -z "$(ls -A ~/cache/frontend || '')" ]; then
-            export BRANCH=$(git branch --show-current)
-            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/frontend/; then
-              echo "REBUILD_FRONTEND=1" | tee -a $GITHUB_ENV
-            fi
+          # rm -rf $CACHE_PATH
+
+          if (
+            [ ! -d $CACHE_PATH ] ||
+            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+          ); then
+            echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
       
       - name: Setup Node.js
@@ -119,13 +123,17 @@ jobs:
       
       - name: Compare git
         run: |
-          # rm -rf ~/cache/app
+          export CACHE_PATH=~/cache/app
+          export TARGET=packages/app/
+          export CACHE_VAR=REBUILD_APP
 
-          if [ -z "$(ls -A ~/cache/app || '')" ]; then
-            export BRANCH=$(git branch --show-current)
-            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
-              echo "REBUILD_APP=1" | tee -a $GITHUB_ENV
-            fi
+          rm -rf $CACHE_PATH
+
+          if (
+            [ ! -d $CACHE_PATH ] ||
+            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+          ); then
+            echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
 
       - name: Setup Go
@@ -217,13 +225,17 @@ jobs:
       
       - name: Compare git
         run: |
-          # rm -rf ~/cache/app
+          export CACHE_PATH=~/cache/app
+          export TARGET=packages/app/
+          export CACHE_VAR=REBUILD_APP
 
-          if [ -z "$(ls -A ~/cache/app || '')" ]; then
-            export BRANCH=$(git branch --show-current)
-            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
-              echo "REBUILD_APP=1" | tee -a $GITHUB_ENV
-            fi
+          rm -rf $CACHE_PATH
+
+          if (
+            [ ! -d $CACHE_PATH ] ||
+            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+          ); then
+            echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
 
       - name: Setup Go
@@ -317,13 +329,17 @@ jobs:
       - name: Compare git
         shell: bash
         run: |
-          # rm -rf ~/cache/app
+          export CACHE_PATH=~/cache/app
+          export TARGET=packages/app/
+          export CACHE_VAR=REBUILD_APP
 
-          if [ -z "$(ls -A ~/cache/app || '')" ]; then
-            export BRANCH=$(git branch --show-current)
-            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
-              echo "REBUILD_APP=1" | tee -a $GITHUB_ENV
-            fi
+          rm -rf $CACHE_PATH
+
+          if (
+            [ ! -d $CACHE_PATH ] ||
+            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+          ); then
+            echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
 
       - name: Setup Go
