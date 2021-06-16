@@ -119,7 +119,7 @@ jobs:
         with:
           path: |
             ~/cache/app
-          key: app-${{ runner.os }}
+          key: app-v2-${{ runner.os }}
       
       - name: Compare git
         run: |
@@ -230,7 +230,7 @@ jobs:
         with:
           path: |
             ~/cache/app
-          key: app-${{ runner.os }}
+          key: app-v2-${{ runner.os }}
       
       - name: Compare git
         run: |
@@ -342,7 +342,7 @@ jobs:
         with:
           path: |
             ~/cache/app
-          key: app-${{ runner.os }}
+          key: app-v2-${{ runner.os }}
       
       - name: Compare git
         shell: bash
