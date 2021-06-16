@@ -127,7 +127,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          # rm -rf $CACHE_PATH
+          rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
@@ -192,7 +192,7 @@ jobs:
         run: |
           rm -rf ~/cache/app
           mkdir -p ~/cache/app
-          cp -r dist ~/cache/app
+          cp -r dist/* ~/cache/app
 
   macos:
     needs: universal
@@ -294,7 +294,7 @@ jobs:
         run: |
           rm -rf ~/cache/app
           mkdir -p ~/cache/app
-          cp -r dist ~/cache/app
+          cp -r dist/* ~/cache/app
 
   windows:
     needs: universal
@@ -333,7 +333,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          # rm -rf $CACHE_PATH
+          rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
@@ -401,4 +401,4 @@ jobs:
         run: |
           rm -rf ~/cache/app
           mkdir -p ~/cache/app
-          cp -r dist ~/cache/app
+          cp -r dist/* ~/cache/app
