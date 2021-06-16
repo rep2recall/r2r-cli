@@ -1,7 +1,10 @@
 <template>
   <div id="Quiz">
     <small
-      :style="{ visibility: index <= cards.length ? 'visible' : 'hidden' }"
+      :style="{
+        visibility:
+          index <= cards.length && side !== 'mnemonic' ? 'visible' : 'hidden'
+      }"
     >
       ({{ index + 1 }}/{{ cards.length }})
     </small>
@@ -10,7 +13,7 @@
     </div>
     <iframe
       v-else-if="card.id"
-      :src="`/card?side=${side}&id=${card.id}&secret=${secret}`"
+      :src="`/card?side=${side}&id=${card.id}&token=${token}`"
     ></iframe>
     <div v-else>
       <p>No quiz pending.</p>
@@ -280,7 +283,7 @@ export default defineComponent({
       cards,
       index,
       side,
-      secret: new URL(location.href).searchParams.get('secret'),
+      token: new URL(location.href).searchParams.get('token'),
       endQuiz,
       dSrsLevel,
       toggleMark,

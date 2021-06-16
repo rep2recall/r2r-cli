@@ -38,8 +38,8 @@ model:
         window.speak = async (s, forceOffline) => {
           if (!forceOffline && navigator.onLine) {
             const audio = new Audio(
-              `/api/extra/gtts?lang=zh-CN&q=${encodeURIComponent(s)}&secret=${encodeURIComponent(
-                new URL(location.href).searchParams.get('secret') || ''
+              `/api/extra/gtts?lang=zh-CN&q=${encodeURIComponent(s)}&token=${encodeURIComponent(
+                new URL(location.href).searchParams.get('token') || ''
               )}`
             )
             await audio.play().catch(() => speak(s, true))
