@@ -36,8 +36,8 @@ jobs:
           # rm -rf $CACHE_PATH
 
           if (
-            [ ! -d $CACHE_PATH ] ||
-            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+            [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
+            !(git diff --quiet $(git log -n 2 --pretty=format:"%H" | tail -n 1) $(git branch --show-current) -- $TARGET)
           ); then
             echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
@@ -130,8 +130,8 @@ jobs:
           # rm -rf $CACHE_PATH
 
           if (
-            [ ! -d $CACHE_PATH ] ||
-            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+            [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
+            !(git diff --quiet $(git log -n 2 --pretty=format:"%H" | tail -n 1) $(git branch --show-current) -- $TARGET)
           ); then
             echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
@@ -232,8 +232,8 @@ jobs:
           # rm -rf $CACHE_PATH
 
           if (
-            [ ! -d $CACHE_PATH ] ||
-            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+            [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
+            !(git diff --quiet $(git log -n 2 --pretty=format:"%H" | tail -n 1) $(git branch --show-current) -- $TARGET)
           ); then
             echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
@@ -336,8 +336,8 @@ jobs:
           # rm -rf $CACHE_PATH
 
           if (
-            [ ! -d $CACHE_PATH ] ||
-            git diff --quiet $(git log -n 1 --pretty=format:"%H") $(git branch --show-current) -- $TARGET
+            [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
+            !(git diff --quiet $(git log -n 2 --pretty=format:"%H" | tail -n 1) $(git branch --show-current) -- $TARGET)
           ); then
             echo "$CACHE_VAR=1" | tee -a $GITHUB_ENV
           fi
