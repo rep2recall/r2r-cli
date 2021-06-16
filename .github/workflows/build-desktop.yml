@@ -107,7 +107,7 @@ jobs:
       - name: Check frontend artifact
         run: |
           if [ -f artifacts/frontend_env/REBUILD_FRONTEND ]; then
-            echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" | tee -a $GITHUB_ENV
+            echo "REBUILD_FRONTEND=1" | tee -a $GITHUB_ENV
           fi
 
           if [ -d artifacts/frontend ]; then
@@ -127,7 +127,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          rm -rf $CACHE_PATH
+          # rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] ||
@@ -209,7 +209,7 @@ jobs:
       - name: Check frontend artifact
         run: |
           if [ -f artifacts/frontend_env/REBUILD_FRONTEND ]; then
-            echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" | tee -a $GITHUB_ENV
+            echo "REBUILD_FRONTEND=1" | tee -a $GITHUB_ENV
           fi
 
           if [ -d artifacts/frontend ]; then
@@ -229,7 +229,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          rm -rf $CACHE_PATH
+          # rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] ||
@@ -312,7 +312,7 @@ jobs:
         shell: bash
         run: |
           if [ -f artifacts/frontend_env/REBUILD_FRONTEND ]; then
-            echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" | tee -a $GITHUB_ENV
+            echo "REBUILD_FRONTEND=1" | tee -a $GITHUB_ENV
           fi
 
           if [ -d artifacts/frontend ]; then
@@ -333,7 +333,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          rm -rf $CACHE_PATH
+          # rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] ||
