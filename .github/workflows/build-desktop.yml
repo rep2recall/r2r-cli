@@ -29,12 +29,12 @@ jobs:
       - name: Compare git
         id: compare-git
         run: |
-          rm -rf ~/cache/frontend
+          # rm -rf ~/cache/frontend
 
           if [ -z "$(ls -A ~/cache/frontend || '')" ]; then
             export BRANCH=$(git branch --show-current)
             if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/frontend/; then
-              echo "REBUILD_FRONTEND=1" >> $GITHUB_ENV
+              echo "REBUILD_FRONTEND=1" | tee -a $GITHUB_ENV
             fi
           fi
       
@@ -72,9 +72,18 @@ jobs:
           rm -rf ~/cache/frontend
           mkdir -p ~/cache/frontend
           cp -r ../app/public/* ~/cache/frontend
-      
-      - uses: actions/upload-artifact@v2
+
+          touch ./REBUILD_FRONTEND
+
+      - name: Send env.REBUILD_FRONTEND
         if: env.REBUILD_FRONTEND
+        uses: actions/upload-artifact@v2
+        with:
+          name: frontend_env
+          path: packages/frontend/REBUILD_FRONTEND
+      
+      - name: Send built frontend (maybe from cache)
+        uses: actions/upload-artifact@v2
         with:
           name: frontend
           path: ~/cache/frontend
@@ -89,15 +98,17 @@ jobs:
       - name: Get frontend artifact
         uses: actions/download-artifact@v2
         with:
-          name: frontend
-          path: packages/app/public
-        continue-on-error: true
+          path: artifacts
       
       - name: Check frontend artifact
         run: |
-          export REBUILD_FRONTEND=$(ls -A ./packages/app/public | head -n 1)
-          echo $REBUILD_FRONTEND
-          echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" >> $GITHUB_ENV
+          if [ -f artifacts/frontend_env/REBUILD_FRONTEND ]; then
+            echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" | tee -a $GITHUB_ENV
+          fi
+
+          if [ -d artifacts/frontend ]; then
+            mv artifacts/frontend packages/app/public
+          fi
 
       - name: Get app cache
         uses: actions/cache@v2
@@ -108,12 +119,12 @@ jobs:
       
       - name: Compare git
         run: |
-          rm -rf ~/cache/app
+          # rm -rf ~/cache/app
 
           if [ -z "$(ls -A ~/cache/app || '')" ]; then
             export BRANCH=$(git branch --show-current)
             if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
-              echo "REBUILD_APP=1" >> $GITHUB_ENV
+              echo "REBUILD_APP=1" | tee -a $GITHUB_ENV
             fi
           fi
 
@@ -129,8 +140,7 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
 
-          rm -rf ./plugins
-          go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+          rm -rf ./plugins/*
 
       - name: Packaging
         if: env.REBUILD_APP || env.REBUILD_FRONTEND
@@ -186,15 +196,17 @@ jobs:
       - name: Get frontend artifact
         uses: actions/download-artifact@v2
         with:
-          name: frontend
-          path: packages/app/public
-        continue-on-error: true
+          path: artifacts
       
       - name: Check frontend artifact
         run: |
-          export REBUILD_FRONTEND=$(ls -A ./packages/app/public | head -n 1)
-          echo $REBUILD_FRONTEND
-          echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" >> $GITHUB_ENV
+          if [ -f artifacts/frontend_env/REBUILD_FRONTEND ]; then
+            echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" | tee -a $GITHUB_ENV
+          fi
+
+          if [ -d artifacts/frontend ]; then
+            mv artifacts/frontend packages/app/public
+          fi
 
       - name: Get app cache
         uses: actions/cache@v2
@@ -205,12 +217,12 @@ jobs:
       
       - name: Compare git
         run: |
-          rm -rf ~/cache/app
+          # rm -rf ~/cache/app
 
           if [ -z "$(ls -A ~/cache/app || '')" ]; then
             export BRANCH=$(git branch --show-current)
             if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
-              echo "REBUILD_APP=1" >> $GITHUB_ENV
+              echo "REBUILD_APP=1" | tee -a $GITHUB_ENV
             fi
           fi
 
@@ -226,8 +238,7 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
 
-          rm -rf ./plugins
-          go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+          rm -rf ./plugins/*
 
       - name: Packaging
         if: env.REBUILD_APP || env.REBUILD_FRONTEND
@@ -283,16 +294,18 @@ jobs:
       - name: Get frontend artifact
         uses: actions/download-artifact@v2
         with:
-          name: frontend
-          path: packages/app/public
-        continue-on-error: true
+          path: artifacts
       
       - name: Check frontend artifact
         shell: bash
         run: |
-          export REBUILD_FRONTEND=$(ls -A ./packages/app/public | head -n 1)
-          echo $REBUILD_FRONTEND
-          echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" >> $GITHUB_ENV
+          if [ -f artifacts/frontend_env/REBUILD_FRONTEND ]; then
+            echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" | tee -a $GITHUB_ENV
+          fi
+
+          if [ -d artifacts/frontend ]; then
+            mv artifacts/frontend packages/app/public
+          fi
 
       - name: Get app cache
         uses: actions/cache@v2
@@ -304,12 +317,12 @@ jobs:
       - name: Compare git
         shell: bash
         run: |
-          rm -rf ~/cache/app
+          # rm -rf ~/cache/app
 
           if [ -z "$(ls -A ~/cache/app || '')" ]; then
             export BRANCH=$(git branch --show-current)
             if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
-              echo "REBUILD_APP=1" >> $GITHUB_ENV
+              echo "REBUILD_APP=1" | tee -a $GITHUB_ENV
             fi
           fi
 
@@ -326,8 +339,7 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall.exe
 
-          rm -rf ./plugins
-          mkdir ./plugins
+          rm -rf ./plugins/*
 
       - name: Packaging
         if: env.REBUILD_APP || env.REBUILD_FRONTEND

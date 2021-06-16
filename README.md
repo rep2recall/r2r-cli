@@ -34,7 +34,7 @@ Flags:
 
 ## Simple, and file-based
 
-You can see example input in `/data/*.yaml`. You can see that it is [Eta](https://eta.js.org/) / browser-side JavaScript based. This is further enhanced by plugins in `/packages/app/plugins/*.js`. Golang-based plugins are also possible.
+You can see example input in `/data/*.yaml`. You can see that it is [Eta](https://eta.js.org/) / browser-side JavaScript based. This is further enhanced by plugins in `/packages/app/plugins/*.js`.
 
 Otherwise, quizzing (and mnemonic) data are generated and stored in `data.db`; with is a SQLite file. The schema can be seen in `/packages/app/db/*.go`.
 

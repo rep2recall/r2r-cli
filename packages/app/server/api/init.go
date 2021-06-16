@@ -21,5 +21,4 @@ func (r *Router) Init() {
 	r.quizRouter()
 	r.cardRouter()
 	r.extraRouter()
-	r.pluginRouter()
 }

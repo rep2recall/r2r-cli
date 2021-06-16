@@ -153,7 +153,7 @@ func Serve(opts ServerOptions) Server {
 			jwtware.New(jwtware.Config{
 				Filter: func(c *fiber.Ctx) bool {
 					path := c.Path()
-					return strings.HasPrefix(path, "/api/plugin") || path == "/api/extra/gtts"
+					return path == "/api/extra/gtts"
 				},
 				SigningKey: bootRand,
 			}),
