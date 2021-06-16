@@ -7,14 +7,19 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
 func (r *Router) extraRouter() {
 	router := r.Router.Group("/extra")
 
-	router.Get("/gtts", func(c *fiber.Ctx) error {
+	router.Get("/gtts", limiter.New(limiter.Config{
+		Max:        1,
+		Expiration: 1 * time.Minute,
+	}), func(c *fiber.Ctx) error {
 		var query struct {
 			Q    string `query:"q" validate:"required"`
 			Lang string `query:"lang" validate:"required"`

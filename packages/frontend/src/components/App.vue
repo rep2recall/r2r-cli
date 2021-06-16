@@ -265,8 +265,7 @@ export default defineComponent({
       doQuiz,
       isLeechOpen,
       isQuiz,
-      sessionId,
-      secret: new URL(location.href).searchParams.get('secret')
+      sessionId
     }
   }
 })

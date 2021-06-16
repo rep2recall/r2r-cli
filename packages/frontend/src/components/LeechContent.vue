@@ -4,7 +4,7 @@
       <div class="column is-4" v-for="id in leechItems" :key="id">
         <iframe
           class="leech-iframe"
-          :src="`/card?side=front&id=${id}&secret=${secret}`"
+          :src="`/card?side=front&id=${id}&token=${token}`"
         ></iframe>
       </div>
 
@@ -57,7 +57,7 @@ export default defineComponent({
     return {
       leechItems,
       scrollTrigger,
-      secret: new URL(location.href).searchParams.get('secret')
+      token: new URL(location.href).searchParams.get('token')
     }
   }
 })

@@ -20,6 +20,7 @@ export default defineConfig({
       external: /^\/vendor\//,
     },
     outDir: '../app/public',
+    // outDir: '../electron/public',
     emptyOutDir: true
   },
   server: {

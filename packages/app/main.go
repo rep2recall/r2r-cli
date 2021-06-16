@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/rep2recall/rep2recall/browser"
 	"github.com/rep2recall/rep2recall/db"
 	"github.com/rep2recall/rep2recall/server"
@@ -74,10 +75,23 @@ func main() {
 
 				s.WaitUntilReady()
 
+				rootURL := fmt.Sprintf("http://localhost:%d", port)
+
+				var authOutput struct {
+					Token string `json:"token"`
+				}
+				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.ServerSecret()).Struct(&authOutput)
+				if e != nil {
+					log.Fatalln(e)
+				}
+				if code != 200 {
+					log.Fatalln(fiber.ErrUnauthorized)
+				}
+
 				b := browser.Browser{
 					ExecPath: browserOfChoice,
 				}
-				b.AppMode(fmt.Sprintf("http://localhost:%d/app?secret=%s", port, shared.ServerSecret()), browser.IsMaximized())
+				b.AppMode(rootURL+fmt.Sprintf("/app?token=%s", authOutput.Token), browser.IsMaximized())
 
 				s.Close()
 			}
@@ -269,16 +283,28 @@ func main() {
 
 			s.WaitUntilReady()
 
+			rootURL := fmt.Sprintf("http://localhost:%d", port)
+
+			var authOutput struct {
+				Token string `json:"token"`
+			}
+			code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.ServerSecret()).Struct(&authOutput)
+			if e != nil {
+				log.Fatalln(e)
+			}
+			if code != 200 {
+				log.Fatalln(fiber.ErrUnauthorized)
+			}
+
 			b := browser.Browser{
 				ExecPath: browserOfChoice,
 			}
 			b.AppMode(
-				fmt.Sprintf(
-					"http://localhost:%d/quiz?secret=%s&q=%s&files=%s",
-					port,
-					shared.ServerSecret(),
+				rootURL+fmt.Sprintf(
+					"/quiz?q=%s&files=%s&token=%s",
 					url.QueryEscape(filter),
 					url.QueryEscape(fileString),
+					authOutput.Token,
 				),
 				browser.WindowSize(600, 800),
 			)

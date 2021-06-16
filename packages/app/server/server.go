@@ -11,12 +11,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/form3tech-oss/jwt-go"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/rep2recall/rep2recall/server/api"
 	"github.com/rep2recall/rep2recall/shared"
 	"gorm.io/gorm"
+
+	jwtware "github.com/gofiber/jwt/v2"
 )
 
 type Server struct {
@@ -89,40 +94,77 @@ func Serve(opts ServerOptions) Server {
 
 	apiSrv := app.Group("/server")
 
-	apiSrv.Get("/config", func(ctx *fiber.Ctx) error {
-		return ctx.JSON(map[string]interface{}{
-			"ready": true,
-		})
-	})
+	apiSrv.Get(
+		"/ready",
+		limiter.New(limiter.Config{
+			Max:        2,
+			Expiration: 1 * time.Second,
+		}),
+		func(ctx *fiber.Ctx) error {
+			return ctx.JSON(map[string]interface{}{
+				"ready": true,
+			})
+		},
+	)
 
-	checkSecret := func(ctx *fiber.Ctx) bool {
-		xSecret := ctx.Get("X-Secret")
-		if xSecret == "" {
-			xSecret = ctx.Query("secret")
-		}
-
-		return xSecret == shared.ServerSecret()
+	bootRand, e := shared.GenerateRandomBytes(64)
+	if e != nil {
+		log.Fatalln(e)
 	}
 
-	apiSrv.Post("/login", func(ctx *fiber.Ctx) error {
-		if !checkSecret(ctx) {
-			return fiber.ErrUnauthorized
-		}
+	apiSrv.Post(
+		"/login",
+		limiter.New(limiter.Config{
+			Max:        1,
+			Expiration: 1 * time.Second,
+		}),
+		basicauth.New(basicauth.Config{
+			Users: map[string]string{
+				"DEFAULT": shared.ServerSecret(),
+			},
+		}),
+		func(c *fiber.Ctx) error {
+			token := jwt.New(jwt.SigningMethodHS256)
 
-		return ctx.JSON(map[string]interface{}{
+			// Set claims
+			claims := token.Claims.(jwt.MapClaims)
+			claims["name"] = c.Locals("username")
+			claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+			// Generate encoded token and send it as response.
+			t, err := token.SignedString(bootRand)
+			if err != nil {
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			return c.JSON(map[string]interface{}{
+				"token": t,
+			})
+		},
+	)
+
+	apiRouter := api.Router{
+		Router: app.Group(
+			"/api",
+			limiter.New(limiter.Config{
+				Max:        10,
+				Expiration: 1 * time.Second,
+			}),
+			jwtware.New(jwtware.Config{
+				Filter: func(c *fiber.Ctx) bool {
+					path := c.Path()
+					return strings.HasPrefix(path, "/api/plugin") || path == "/api/extra/gtts"
+				},
+				SigningKey: bootRand,
+			}),
+		),
+	}
+	apiRouter.Router.Post("/ok", func(c *fiber.Ctx) error {
+		return c.JSON(map[string]interface{}{
 			"ok": true,
 		})
 	})
 
-	apiRouter := api.Router{
-		Router: app.Group("/api", func(ctx *fiber.Ctx) error {
-			if !checkSecret(ctx) {
-				return fiber.ErrUnauthorized
-			}
-
-			return ctx.Next()
-		}),
-	}
 	apiRouter.Init()
 
 	r.DB = apiRouter.DB
@@ -145,11 +187,11 @@ func Serve(opts ServerOptions) Server {
 }
 
 func (s Server) WaitUntilReady() {
-	url := fmt.Sprintf("http://localhost:%d", s.port)
+	rootURL := fmt.Sprintf("http://localhost:%d", s.port)
 
 	for {
 		time.Sleep(1 * time.Second)
-		_, err := http.Head(url + "/server/config")
+		_, err := http.Head(rootURL + "/server/ready")
 		if err == nil {
 			break
 		}
