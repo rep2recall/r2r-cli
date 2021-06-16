@@ -4,7 +4,9 @@ import qs from 'querystring'
 import { PassThrough } from 'stream'
 
 import { MikroORM } from '@mikro-orm/core'
+import ON_DEATH from 'death'
 import { app as electron } from 'electron'
+import contextMenu from 'electron-context-menu'
 import fastify, { FastifyInstance } from 'fastify'
 import cors from 'fastify-cors'
 import fastifyStatic from 'fastify-static'
@@ -27,19 +29,10 @@ interface ServerInstance {
   orm: MikroORM
 }
 
-function setAppName(APP_NAME = 'rep2recall') {
-  electron.setName(APP_NAME)
-  electron.setPath('userData', path.join(electron.getPath('appData'), APP_NAME))
-}
-
-electron.whenReady().then(() => {
-  setAppName()
-})
+contextMenu()
 
 export class Server implements ServerInstance {
   static async init(opts: ServerOptions): Promise<Server> {
-    setAppName()
-
     console.log('userData path is ', electron.getPath('userData'))
 
     const logThrough = new PassThrough()
@@ -60,7 +53,7 @@ export class Server implements ServerInstance {
 
     logThrough
       .pipe(stripANSIStream())
-      .pipe(fs.createWriteStream(path.resolve(ROOTDIR, 'server.log')))
+      .pipe(fs.createWriteStream(path.resolve(electron.getPath('userData'), 'server.log')))
     logThrough.pipe(process.stdout)
 
     const app = fastify({
@@ -80,7 +73,8 @@ export class Server implements ServerInstance {
     }
 
     app.register(fastifyStatic, {
-      root: path.resolve(ROOTDIR, 'public')
+      root: path.resolve(ROOTDIR, 'public'),
+      redirect: true
     })
 
     await new Promise<void>((resolve, reject) => {
@@ -98,8 +92,12 @@ export class Server implements ServerInstance {
       app,
       logger,
       orm: await initDatabase(
-        path.join(electron.getPath('userData'), 'data.db')
+        path.join(electron.getPath('userData'), g.config.db)
       )
+    })
+
+    ON_DEATH(() => {
+      g.server.close()
     })
 
     return g.server

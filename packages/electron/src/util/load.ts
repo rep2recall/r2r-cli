@@ -11,10 +11,12 @@ import { Model } from '../db/model'
 import { Note, NoteAttr } from '../db/note'
 import { g } from '../shared'
 
+const sId = S.string().minLength(5)
+
 const sFile = S.shape({
   model: S.list(
     S.shape({
-      id: S.string(),
+      id: sId,
       name: S.string().optional(),
       front: S.string().optional(),
       back: S.string().optional(),
@@ -26,8 +28,8 @@ const sFile = S.shape({
   ).optional(),
   template: S.list(
     S.shape({
-      id: S.string(),
-      modelId: S.string(),
+      id: sId,
+      modelId: sId,
       name: S.string().optional(),
       front: S.string().optional(),
       back: S.string().optional(),
@@ -37,16 +39,16 @@ const sFile = S.shape({
   ).optional(),
   note: S.list(
     S.shape({
-      id: S.string(),
-      modelId: S.string(),
+      id: sId,
+      modelId: sId,
       data: S.object()
     })
   ).optional(),
   card: S.list(
     S.shape({
-      id: S.string(),
-      templateId: S.string().optional(),
-      noteId: S.string().optional(),
+      id: sId,
+      templateId: sId.optional(),
+      noteId: sId.optional(),
       tag: S.list(S.string()).optional(),
       front: S.string().optional(),
       back: S.string().optional(),

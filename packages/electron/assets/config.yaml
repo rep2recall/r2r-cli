@@ -1,0 +1,4 @@
+# Server port, for server-based deployment and preventing multiple instances
+port: 25459
+# Database path or MongoDB URI
+db: ./data.db

@@ -1,109 +1,182 @@
-import ON_DEATH from 'death'
+import path from 'path'
+import qs from 'querystring'
+
+import { app as electron } from 'electron'
 import yargs from 'yargs'
 
+import { appMode } from './browser/show'
 import { Server } from './server'
+import { config, g } from './shared'
+import { load } from './util/load'
 
-const { argv } = yargs
-  .scriptName('rep2recall')
-  .usage('$0 [cmd] [args]')
-  .command(
-    '$0 [files...]',
-    'open in GUI mode, for full interaction',
-    (yargs) => {
-      yargs
-        .positional('files', {
-          type: 'string',
-          demandOption: false,
-          normalize: true
-        })
-        .option('filter', {
-          alias: 'f',
-          describe: 'keyword to filter',
-          type: 'string'
-        })
-    },
-    (argv) => {
-      console.log(argv)
-    }
-  )
-  .command(
-    'load <files...>',
-    'load files into the database',
-    (yargs) => {
-      yargs.positional('files', {
-        type: 'string',
-        demandOption: true,
-        normalize: true
-      })
-    },
-    (argv) => {
-      console.log(argv)
-    }
-  )
-  .command(
-    'clean [files...]',
-    'clean the to-be-deleted part of the database and exit',
-    (yargs) => {
-      yargs
-        .positional('files', {
-          type: 'string',
-          demandOption: false,
-          normalize: true
-        })
-        .option('filter', {
-          alias: 'f',
-          describe: 'keyword to filter',
-          type: 'string'
-        })
-    },
-    (argv) => {
-      console.log(argv)
-    }
-  )
-  .command(
-    'server',
-    'open in Server mode, for online deployment',
-    (yargs) => {
-      yargs.option('proxy', {
-        describe: 'use as proxy server (enable CORS)',
-        type: 'boolean'
-      })
-    },
-    (argv) => {
-      console.log(argv)
-    }
-  )
-  .option('port', {
-    alias: 'p',
-    describe: 'port to run the server',
-    type: 'number',
-    default: 25459
-  })
-  .option('debug', {
-    describe: 'whether to run in debug mode',
-    type: 'boolean'
-  })
-  .help()
+function setAppDir() {
+  const APP_NAME = 'rep2recall'
+  const { USER_DATA_DIR } = process.env
+
+  if (USER_DATA_DIR) {
+    electron.setPath('userData', USER_DATA_DIR)
+  } else {
+    electron.setPath('userData', path.join(electron.getPath('appData'), APP_NAME))
+  }
+}
 
 async function main() {
-  console.log(argv)
+  setAppDir()
+  await electron.whenReady()
+  setAppDir()
 
-  if (argv._[0] === 'server') {
-    const srv = await Server.init({
-      isServer: true,
-      debug: false,
-      proxy: false,
-      port: argv.port as number,
+  const cfg = config()
+
+  const args: {
+    cmd?: 'load' | 'quiz' | 'clean' | 'server'
+    files?: string[]
+    filter?: string
+    proxy?: boolean
+  } = {}
+
+  const { argv } = yargs
+    .scriptName('rep2recall')
+    .usage('$0 [cmd] [args]')
+    .command(
+      '$0 [files...]',
+      'open in GUI mode, for full interaction',
+      (yargs) => {
+        return yargs
+          .positional('files', {
+            type: 'string',
+            demandOption: false,
+            normalize: true,
+            array: true
+          })
+          .option('filter', {
+            alias: 'f',
+            describe: 'keyword to filter',
+            type: 'string'
+          })
+      },
+      ({ files, filter }) => {
+        args.files = files
+        args.filter = filter
+      }
+    )
+    .command(
+      'load <files...>',
+      'load files into the database',
+      (yargs) => {
+        return yargs.positional('files', {
+          type: 'string',
+          demandOption: true,
+          normalize: true,
+          array: true
+        })
+      },
+      ({ files }) => {
+        args.cmd = 'load'
+        args.files = files
+      }
+    )
+    .command(
+      'clean [files...]',
+      'clean the to-be-deleted part of the database and exit',
+      (yargs) => {
+        return yargs
+          .positional('files', {
+            type: 'string',
+            demandOption: false,
+            normalize: true,
+            array: true
+          })
+          .option('filter', {
+            alias: 'f',
+            describe: 'keyword to filter',
+            type: 'string'
+          })
+      },
+      ({ files, filter }) => {
+        args.cmd = 'clean'
+        args.files = files
+        args.filter = filter
+      }
+    )
+    .command(
+      'server',
+      'open in server mode, for online deployment',
+      (yargs) => {
+        return yargs.option('proxy', {
+          describe: 'use as proxy server (enable CORS)',
+          type: 'boolean'
+        })
+      },
+      ({ proxy }) => {
+        args.cmd = 'server'
+        args.proxy = proxy
+      }
+    )
+    .option('port', {
+      alias: 'p',
+      describe: 'port to run the server',
+      type: 'number',
+      default: cfg.port
     })
-
-    ON_DEATH(() => {
-      srv.close()
+    .option('db', {
+      describe: 'path to the database, or MONGO_URI',
+      type: 'string',
+      default: cfg.db
     })
+    .option('debug', {
+      describe: 'whether to run in debug mode',
+      type: 'boolean'
+    })
+    .help()
 
-    return
+  const { cmd, files = [], filter: q = '', proxy = false } = args
+  const { port, debug = false, db } = argv
+
+  g.config.port = port
+  g.config.db = db
+
+  await Server.init({
+    isServer: true,
+    debug,
+    proxy,
+    port,
+  })
+
+  electron.on('window-all-closed', () => {
+    electron.quit()
+  })
+
+  switch (cmd) {
+    case undefined:
+      appMode(`http://localhost:${port}/app?${qs.stringify({
+        q,
+        files: files.length ? JSON.stringify(files) : undefined
+      })}`)
+      break
+    case 'quiz':
+      appMode(`http://localhost:${port}/quiz?${qs.stringify({
+        q,
+        files: files.length ? JSON.stringify(files) : undefined,
+      })}`, {
+        width: 600,
+        height: 800
+      })
+      break
+    case 'load':
+      for (const f of files) {
+        await load(f, {
+          debug,
+          port
+        })
+      }
+      electron.quit()
+      break
+    case 'clean':
+      electron.quit()
+      break
+    default:
+      electron.quit()
   }
-
-  process.exit(0)
 }
 
 main()

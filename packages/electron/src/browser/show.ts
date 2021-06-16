@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron'
+import { BrowserWindow } from 'electron'
 
 export async function appMode(
   url: string,
@@ -7,8 +7,6 @@ export async function appMode(
     height?: number
   } = {}
 ) {
-  await app.whenReady()
-
   const { width, height } = opts
 
   const win = new BrowserWindow({

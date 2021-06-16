@@ -19,8 +19,8 @@ export default defineConfig({
     rollupOptions: {
       external: /^\/vendor\//,
     },
-    // outDir: '../app/public',
-    outDir: '../electron/public',
+    outDir: '../app/public',
+    // outDir: '../electron/public',
     emptyOutDir: true
   },
   server: {
