@@ -5,136 +5,369 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [created, edited]
+
+env:
+  NODE_VERSION: 14.x
+  GO_VERSION: '1.16'
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest]
+  universal:
+    runs-on: ubuntu-latest
 
-    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v2
 
-      ############ Set Up ############
-
-      - name: Setup Go
-        uses: actions/setup-go@v2
+      - name: Get frontend built cache
+        uses: actions/cache@v2
         with:
-          go-version: 1.16
+          path: |
+            ~/cache/frontend
+          key: frontend
+      
+      - name: Compare git
+        id: compare-git
+        shell: bash
+        run: |
+          # rm -rf ~/cache/frontend
+
+          if [ -z "$(ls -A ~/cache/frontend)" ]; then
+            if git diff --quiet $(git branch --show-current) $(git log -n 1 --pretty=format:"%H") -- packages/frontend/; then
+              echo "REBUILD_FRONTEND=1" >> $GITHUB_ENV
+            fi
+          fi
+      
       - name: Setup Node.js
+        if: env.REBUILD_FRONTEND
         uses: actions/setup-node@v2.1.5
         with:
-          node-version: 14.x
+          node-version: ${{ env.NODE_VERSION }}
 
-      ############ Build frontend ############
+        # See: https://github.com/actions/cache/blob/main/examples.md#node---yarn
+      - name: Get Yarn cache directory
+        if: env.REBUILD_FRONTEND
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
 
+      - name: Use Yarn cache
+        if: env.REBUILD_FRONTEND
+        uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
+
+      # `--prefer-offline` gives cache priority
       - name: Build frontend
+        if: env.REBUILD_FRONTEND
+        shell: bash
         run: |
           cd packages/frontend
-          npm i -g yarn rimraf
-          yarn
+
+          npm i -g yarn
+          yarn install --prefer-offline --frozen-lockfile
           yarn build
 
-      ############ Build app (Windows) ############
+          rm -rf ~/cache/frontend
+          mkdir -p ~/cache/frontend
+          cp -r ../app/public/* ~/cache/frontend
+      
+      - uses: actions/upload-artifact@v2
+        if: env.REBUILD_FRONTEND
+        with:
+          name: frontend
+          path: ~/cache/frontend
 
-      - name: Build app (Windows)
-        if: matrix.platform == 'windows-latest'
+  linux:
+    needs: universal
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get frontend artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend
+          path: packages/app/public
+        continue-on-error: true
+      
+      - name: Check frontend artifact
         run: |
-          cd packages/app
-          go build --tags "sqlite_fts5" -ldflags="-H windowsgui" -o rep2recall.exe
+          export REBUILD_FRONTEND=$(ls -A ./packages/app/public | head -n 1)
+          echo $REBUILD_FRONTEND
+          echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" >> $GITHUB_ENV
 
-      # Not supported in Windows
-      # https://github.com/golang/go/issues/19282
-      - name: Build plugins (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Get app cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/cache/app
+          key: app-${{ runner.os }}
+      
+      - name: Compare git
         run: |
-          cd packages/app
-          rimraf plugins
+          # rm -rf ~/cache/app
 
-          mkdir plugins
-          # go build -buildmode=plugin -o plugins/ __plugins__/gtts
+          if [ -z "$(ls -A ~/cache/app)" ]; then
+            if git diff --quiet $(git branch --show-current) $(git log -n 1 --pretty=format:"%H") -- packages/app/; then
+              echo "REBUILD_APP=1" >> $GITHUB_ENV
+            fi
+          fi
 
-      ############ Build app (non-Windows) ############
+      - name: Setup Go
+        if: env.REBUILD_APP
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-      - name: Build app (non-Windows)
-        if: matrix.platform != 'windows-latest'
+      - name: Build app
+        if: env.REBUILD_APP
         run: |
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
-      - name: Build plugins (non-Windows)
-        if: matrix.platform != 'windows-latest'
-        run: |
-          cd packages/app
+
           rm -rf ./plugins
           go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
 
-      ############ Packaging (Linux) ############
-
-      - name: Packaging (Linux)
-        if: matrix.platform == 'ubuntu-latest'
+      - name: Packaging
+        if: env.REBUILD_APP || env.REBUILD_FRONTEND
         run: |
           mkdir dist
 
-          cp packages/app/rep2recall dist/rep2recall
-          cp -r packages/app/plugins dist/plugins
-          cp -r packages/app/public dist/public
+          if [ -f packages/app/rep2recall ]; then
+            cp packages/app/rep2recall dist/
+            cp -r packages/app/plugins dist/
+          else
+            cp -r ~/cache/app/* dist/
+          fi
+
+          cp -r packages/app/public dist/ || true
 
           cd dist
           tar -czf ../rep2recall-linux.tar.gz *
-      - name: Upload binaries to release (Linux)
-        if: matrix.platform == 'ubuntu-latest'
+
+      - name: Upload binaries to auto
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: rep2recall-linux.tar.gz
-          tag: release-${{ github.ref }}
           overwrite: true
-          body: Executable for Linux
+          tag: auto-${{ github.ref }}
+          body: Auto-built for main branch pushes
 
-      ############ Packaging (macOS) ############
+      - name: Upload binaries to release
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name == 'release'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: rep2recall-linux.tar.gz
+          overwrite: true
+          tag: ${{ github.ref }}
+          body: Auto-built for main branch pushes
 
-      - name: Packaging (macOS)
-        if: matrix.platform == 'macos-latest'
+      - name: Update cache
+        if: env.REBUILD_APP || env.REBUILD_FRONTEND
+        run: |
+          rm -rf ~/cache/app
+          mkdir -p ~/cache/app
+          cp -r dist ~/cache/app
+
+  macos:
+    needs: universal
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get frontend artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend
+          path: packages/app/public
+        continue-on-error: true
+      
+      - name: Check frontend artifact
+        run: |
+          export REBUILD_FRONTEND=$(ls -A ./packages/app/public | head -n 1)
+          echo $REBUILD_FRONTEND
+          echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" >> $GITHUB_ENV
+
+      - name: Get app cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/cache/app
+          key: app-${{ runner.os }}
+      
+      - name: Compare git
+        run: |
+          # rm -rf ~/cache/app
+
+          if [ -z "$(ls -A ~/cache/app)" ]; then
+            if git diff --quiet $(git branch --show-current) $(git log -n 1 --pretty=format:"%H") -- packages/app/; then
+              echo "REBUILD_APP=1" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Setup Go
+        if: env.REBUILD_APP
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build app
+        if: env.REBUILD_APP
+        run: |
+          cd packages/app
+          go build --tags "sqlite_fts5" -o rep2recall
+
+          rm -rf ./plugins
+          go build -buildmode=plugin -o ./plugins/ ./__plugins__/gtts
+
+      - name: Packaging
+        if: env.REBUILD_APP || env.REBUILD_FRONTEND
         run: |
           mkdir dist
 
-          cp packages/app/rep2recall dist/rep2recall
-          cp -r packages/app/plugins dist/plugins
-          cp -r packages/app/public dist/public
+          if [ -f packages/app/rep2recall ]; then
+            cp packages/app/rep2recall dist/rep2recall.app
+            cp -r packages/app/plugins dist/
+          else
+            cp -r ~/cache/app/* dist/
+          fi
+
+          cp -r packages/app/public dist/ || true
 
           cd dist
           zip -r ../rep2recall-macos.zip *
-      - name: Upload binaries to release (macOS)
-        if: matrix.platform == 'macos-latest'
+
+      - name: Upload binaries to auto
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: rep2recall-macos.zip
-          tag: release-${{ github.ref }}
           overwrite: true
-          body: Executable for macOS
+          tag: auto-${{ github.ref }}
+          body: Auto-built for main branch pushes
 
-      ############ Packaging (Windows) ############
+      - name: Upload binaries to release
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name == 'release'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: rep2recall-macos.zip
+          overwrite: true
+          tag: ${{ github.ref }}
+          body: Auto-built for main branch pushes
 
-      - name: Packaging (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Update cache
+        if: env.REBUILD_APP || env.REBUILD_FRONTEND
+        run: |
+          rm -rf ~/cache/app
+          mkdir -p ~/cache/app
+          cp -r dist ~/cache/app
+
+  windows:
+    needs: universal
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get frontend artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend
+          path: packages/app/public
+        continue-on-error: true
+      
+      - name: Check frontend artifact
+        shell: bash
+        run: |
+          export REBUILD_FRONTEND=$(ls -A ./packages/app/public | head -n 1)
+          echo $REBUILD_FRONTEND
+          echo "REBUILD_FRONTEND=$REBUILD_FRONTEND" >> $GITHUB_ENV
+
+      - name: Get app cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/cache/app
+          key: app-${{ runner.os }}
+      
+      - name: Compare git
+        shell: bash
+        run: |
+          # rm -rf ~/cache/app
+
+          if [ -z "$(ls -A ~/cache/app)" ]; then
+            if git diff --quiet $(git branch --show-current) $(git log -n 1 --pretty=format:"%H") -- packages/app/; then
+              echo "REBUILD_APP=1" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Setup Go
+        if: env.REBUILD_APP
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build app
+        if: env.REBUILD_APP
+        shell: bash
+        run: |
+          cd packages/app
+          go build --tags "sqlite_fts5" -o rep2recall.exe
+
+          rm -rf ./plugins
+          mkdir ./plugins
+
+      - name: Packaging
+        if: env.REBUILD_APP || env.REBUILD_FRONTEND
+        shell: bash
         run: |
           mkdir dist
 
-          cp packages/app/rep2recall.exe dist/rep2recall.exe
-          cp -r packages/app/plugins dist/plugins
-          cp -r packages/app/public dist/public
+          if [ -f packages/app/rep2recall.exe ]; then
+            cp packages/app/rep2recall.exe dist/
+            cp -r packages/app/plugins dist/
+          else
+            cp -r ~/cache/app/* dist/
+          fi
+
+          cp -r packages/app/public dist/ || true
 
           cd dist
           tar -cf ../rep2recall-windows.tar *
-      - name: Upload binaries to release (Windows)
-        if: matrix.platform == 'windows-latest'
+
+      - name: Upload binaries to auto
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: rep2recall-windows.tar
-          tag: release-${{ github.ref }}
           overwrite: true
-          body: Executable for Windows
+          tag: auto-${{ github.ref }}
+          body: Auto-built for main branch pushes
+
+      - name: Upload binaries to release
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name == 'release'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: rep2recall-windows.tar
+          overwrite: true
+          tag: ${{ github.ref }}
+          body: Auto-built for main branch pushes
+
+      - name: Update cache
+        if: env.REBUILD_APP || env.REBUILD_FRONTEND
+        shell: bash
+        run: |
+          rm -rf ~/cache/app
+          mkdir -p ~/cache/app
+          cp -r dist ~/cache/app

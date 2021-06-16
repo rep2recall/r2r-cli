@@ -1,6 +1,10 @@
 <template>
   <div id="Quiz">
-    <small> ({{ index + 1 }}/{{ cards.length }}) </small>
+    <small
+      :style="{ visibility: index <= cards.length ? 'visible' : 'hidden' }"
+    >
+      ({{ index + 1 }}/{{ cards.length }})
+    </small>
     <div v-if="side === 'mnemonic'" id="Mnemonic">
       <div class="quill"></div>
     </div>
@@ -100,7 +104,7 @@
 
       <div class="buttons-right">
         <button
-          v-if="index < cards.length - 2"
+          v-if="index < cards.length - 1"
           class="button has-background-grey-lighter"
           type="button"
           @click="index++"
