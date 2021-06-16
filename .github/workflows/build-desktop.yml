@@ -127,7 +127,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          rm -rf $CACHE_PATH
+          # rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
@@ -176,8 +176,8 @@ jobs:
           tar -czf ../rep2recall-linux.tar.gz *
 
       - name: Upload binaries to auto
-        if: github.event_name != 'release'
-        # if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
+        # if: github.event_name != 'release'
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
