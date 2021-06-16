@@ -60,7 +60,7 @@ jobs:
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-yarn-${{ env.NODE_VERSION }}-${{ hashFiles('**/yarn.lock') }}
 
       # `--prefer-offline` gives cache priority
       - name: Build frontend
@@ -127,7 +127,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          # rm -rf $CACHE_PATH
+          rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
@@ -141,6 +141,14 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      - name: Use Go cache
+        if: env.REBUILD_APP
+        uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ~/go
+          key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
 
       - name: Build app
         if: env.REBUILD_APP
@@ -230,7 +238,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          rm -rf $CACHE_PATH
+          # rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
@@ -244,6 +252,14 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      - name: Use Go cache
+        if: env.REBUILD_APP
+        uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ~/go
+          key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
 
       - name: Build app
         if: env.REBUILD_APP
@@ -271,8 +287,8 @@ jobs:
           zip -r ../rep2recall-macos.zip *
 
       - name: Upload binaries to auto
-        if: github.event_name != 'release'
-        # if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
+        # if: github.event_name != 'release'
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -335,7 +351,7 @@ jobs:
           export TARGET=packages/app/
           export CACHE_VAR=REBUILD_APP
 
-          rm -rf $CACHE_PATH
+          # rm -rf $CACHE_PATH
 
           if (
             [ ! -d $CACHE_PATH ] || [ ! -z "$(ls -A $CACHE_PATH)"] ||
@@ -349,6 +365,14 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      - name: Use Go cache
+        if: env.REBUILD_APP
+        uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ~/go
+          key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
 
       - name: Build app
         if: env.REBUILD_APP
@@ -378,8 +402,8 @@ jobs:
           tar -cf ../rep2recall-windows.tar *
 
       - name: Upload binaries to auto
-        if: github.event_name != 'release'
-        # if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
+        # if: github.event_name != 'release'
+        if: (env.REBUILD_APP || env.REBUILD_FRONTEND) && github.event_name != 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
