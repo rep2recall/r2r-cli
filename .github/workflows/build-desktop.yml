@@ -8,6 +8,10 @@ on:
   release:
     types: [created, edited]
 
+env:
+  NODE_VERSION: 14.x
+  GO_VERSION: '1.16'
+
 jobs:
   universal:
     runs-on: ubuntu-latest
@@ -27,9 +31,9 @@ jobs:
         run: |
           rm -rf ~/cache/frontend
 
-          if [ -z "$(ls -A ~/cache/frontend)" ]; then
+          if [ -z "$(ls -A ~/cache/frontend || '')" ]; then
             export BRANCH=$(git branch --show-current)
-            if git diff --quiet $BRANCH^ $BRANCH -- packages/frontend/; then
+            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/frontend/; then
               echo "REBUILD_FRONTEND=1" >> $GITHUB_ENV
             fi
           fi
@@ -38,7 +42,7 @@ jobs:
         if: env.REBUILD_FRONTEND
         uses: actions/setup-node@v2.1.5
         with:
-          node-version: 14.x
+          node-version: ${{ env.NODE_VERSION }}
 
         # See: https://github.com/actions/cache/blob/main/examples.md#node---yarn
       - name: Get Yarn cache directory
@@ -106,9 +110,9 @@ jobs:
         run: |
           rm -rf ~/cache/app
 
-          if [ -z "$(ls -A ~/cache/app)" ]; then
+          if [ -z "$(ls -A ~/cache/app || '')" ]; then
             export BRANCH=$(git branch --show-current)
-            if git diff --quiet $BRANCH^ $BRANCH -- packages/app/; then
+            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
               echo "REBUILD_APP=1" >> $GITHUB_ENV
             fi
           fi
@@ -117,7 +121,7 @@ jobs:
         if: env.REBUILD_APP
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Build app
         if: env.REBUILD_APP
@@ -203,9 +207,9 @@ jobs:
         run: |
           rm -rf ~/cache/app
 
-          if [ -z "$(ls -A ~/cache/app)" ]; then
+          if [ -z "$(ls -A ~/cache/app || '')" ]; then
             export BRANCH=$(git branch --show-current)
-            if git diff --quiet $BRANCH^ $BRANCH -- packages/app/; then
+            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
               echo "REBUILD_APP=1" >> $GITHUB_ENV
             fi
           fi
@@ -214,7 +218,7 @@ jobs:
         if: env.REBUILD_APP
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Build app
         if: env.REBUILD_APP
@@ -302,9 +306,9 @@ jobs:
         run: |
           rm -rf ~/cache/app
 
-          if [ -z "$(ls -A ~/cache/app)" ]; then
+          if [ -z "$(ls -A ~/cache/app || '')" ]; then
             export BRANCH=$(git branch --show-current)
-            if git diff --quiet $BRANCH^ $BRANCH -- packages/app/; then
+            if git diff --quiet $(git log -n 1 --pretty=format:"%H") $BRANCH -- packages/app/; then
               echo "REBUILD_APP=1" >> $GITHUB_ENV
             fi
           fi
@@ -313,7 +317,7 @@ jobs:
         if: env.REBUILD_APP
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Build app
         if: env.REBUILD_APP
