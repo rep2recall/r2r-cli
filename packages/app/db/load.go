@@ -39,6 +39,7 @@ type LoadedStruct struct {
 		If      string
 	} `validate:"dive"`
 	Note []struct {
+		Key     string
 		ID      string                 `validate:"required,uuid"`
 		ModelID string                 `validate:"required,uuid" yaml:"modelId"`
 		Data    map[string]interface{} `validate:"required"`
@@ -226,11 +227,22 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			}
 		}
 
-		if r := tx.FirstOrCreate(&Note{
+		noteResult := Note{
 			ID:      n.ID,
+			Key:     n.Key,
 			ModelID: n.ModelID,
-		}); r.Error != nil {
+		}
+
+		if r := tx.FirstOrCreate(&noteResult); r.Error != nil {
 			return r.Error
+		}
+
+		if noteResult.Key != n.Key {
+			noteResult.Key = n.Key
+
+			if r := tx.Updates(&noteResult); r.Error != nil {
+				return r.Error
+			}
 		}
 
 		for key, v := range n.Data {
@@ -242,7 +254,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			if r := tx.Clauses(clause.OnConflict{
 				DoUpdates: clause.AssignmentColumns([]string{"data"}),
 			}).Create(&NoteAttr{
-				NoteID: n.ID,
+				NoteID: noteResult.ID,
 				Key:    key,
 				Data:   data,
 			}); r.Error != nil {

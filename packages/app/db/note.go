@@ -17,6 +17,7 @@ type Note struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time      `gorm:"index"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Key       string         `gorm:"index:,unique"`
 	ModelID   string         `gorm:"index"`
 	Attrs     []NoteAttr     `gorm:"constraint:OnDelete:CASCADE"`
 }

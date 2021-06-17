@@ -170,7 +170,10 @@ jobs:
             cp -r ~/cache/app/* dist/
           fi
 
-          cp -r packages/app/public dist/ || true
+          if [ -d packages/app/public ]; then
+            rm -rf dist/public
+            cp -r packages/app/public dist/
+          fi
 
           cd dist
           tar -czf ../rep2recall-linux.tar.gz *
@@ -281,7 +284,10 @@ jobs:
             cp -r ~/cache/app/* dist/
           fi
 
-          cp -r packages/app/public dist/ || true
+          if [ -d packages/app/public ]; then
+            rm -rf dist/public
+            cp -r packages/app/public dist/
+          fi
 
           cd dist
           zip -r ../rep2recall-macos.zip *
@@ -396,7 +402,10 @@ jobs:
             cp -r ~/cache/app/* dist/
           fi
 
-          cp -r packages/app/public dist/ || true
+          if [ -d packages/app/public ]; then
+            rm -rf dist/public
+            cp -r packages/app/public dist/
+          fi
 
           cd dist
           tar -cf ../rep2recall-windows.tar *
