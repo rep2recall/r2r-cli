@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -18,7 +17,7 @@ func (r *Router) extraRouter() {
 
 	router.Get("/gtts", limiter.New(limiter.Config{
 		Max:        1,
-		Expiration: 1 * time.Minute,
+		Expiration: 1 * time.Second,
 	}), func(c *fiber.Ctx) error {
 		var query struct {
 			Q    string `query:"q" validate:"required"`
@@ -40,7 +39,7 @@ func (r *Router) extraRouter() {
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://translate.google.com/translate_tts?%s", params.Encode()), nil)
 		if err != nil {
-			log.Fatalln(err)
+			panic(err)
 		}
 
 		req.Header.Add("Referrer", "http://translate.google.com/")
