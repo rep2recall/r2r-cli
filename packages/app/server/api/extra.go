@@ -18,7 +18,7 @@ func (r *Router) extraRouter() {
 
 	router.Get("/gtts", limiter.New(limiter.Config{
 		Max:        1,
-		Expiration: 1 * time.Minute,
+		Expiration: 1 * time.Second,
 	}), func(c *fiber.Ctx) error {
 		var query struct {
 			Q    string `query:"q" validate:"required"`
