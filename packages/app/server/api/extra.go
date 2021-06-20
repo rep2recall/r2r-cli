@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -40,7 +39,7 @@ func (r *Router) extraRouter() {
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://translate.google.com/translate_tts?%s", params.Encode()), nil)
 		if err != nil {
-			log.Fatalln(err)
+			panic(err)
 		}
 
 		req.Header.Add("Referrer", "http://translate.google.com/")
