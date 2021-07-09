@@ -3,7 +3,7 @@
     <small
       :style="{
         visibility:
-          index < cards.length && side !== 'mnemonic' ? 'visible' : 'hidden',
+          index < cards.length && side !== 'mnemonic' ? 'visible' : 'hidden'
       }"
     >
       ({{ index + 1 }}/{{ cards.length }})
@@ -107,7 +107,7 @@
 
       <div class="buttons-right">
         <button
-          v-if="index < cards.length - 1"
+          v-if="index < cards.length"
           class="button has-background-grey-lighter"
           type="button"
           @click="index++"
@@ -147,11 +147,11 @@ export default defineComponent({
   props: {
     session: {
       type: String,
-      required: true,
+      required: true
     },
     standalone: {
-      type: Boolean,
-    },
+      type: Boolean
+    }
   },
   emits: ['end'],
   setup(props) {
@@ -175,14 +175,14 @@ export default defineComponent({
           params: {
             id: c.id,
             dSrsLevel: c.dSrsLevel,
-            session: props.session,
-          },
+            session: props.session
+          }
         })
         .then(() => {
           cards.value = [
             ...cards.value.slice(0, i),
             c,
-            ...cards.value.slice(i + 1),
+            ...cards.value.slice(i + 1)
           ]
           side.value = 'front'
           index.value = i + 1
@@ -203,8 +203,8 @@ export default defineComponent({
           isMarked: boolean
         }>('/api/card/toggleMarked', undefined, {
           params: {
-            id: c.id,
-          },
+            id: c.id
+          }
         })
         .then(({ data }) => {
           c.isMarked = data.isMarked
@@ -212,7 +212,7 @@ export default defineComponent({
           cards.value = [
             ...cards.value.slice(0, i),
             c,
-            ...cards.value.slice(i + 1),
+            ...cards.value.slice(i + 1)
           ]
         })
     }
@@ -223,7 +223,7 @@ export default defineComponent({
       // }
     }
 
-    watch(side, (side) => {
+    watch(side, side => {
       const i = index.value
       const c = cards.value[i]
 
@@ -236,13 +236,13 @@ export default defineComponent({
           api
             .get('/api/card/mnemonic', {
               params: {
-                id: c.id,
-              },
+                id: c.id
+              }
             })
-            .then((r) => {
+            .then(r => {
               quill = new Quill('#Mnemonic .quill', {
                 placeholder: 'Compose a memorable mnemonic...',
-                theme: 'snow',
+                theme: 'snow'
               })
 
               quill.setContents(r.data)
@@ -250,8 +250,8 @@ export default defineComponent({
                 console.log(quill.getContents())
                 api.put('/api/card/mnemonic', quill.getContents(), {
                   params: {
-                    id: c.id,
-                  },
+                    id: c.id
+                  }
                 })
               })
 
@@ -270,8 +270,8 @@ export default defineComponent({
           }[]
         }>('/api/quiz/session', {
           params: {
-            session: props.session,
-          },
+            session: props.session
+          }
         })
         .then(({ data }) => {
           cards.value = data.result
@@ -287,7 +287,7 @@ export default defineComponent({
       endQuiz,
       dSrsLevel,
       toggleMark,
-      autoclose: !props.standalone,
+      autoclose: !props.standalone
     }
   },
   computed: {
@@ -297,8 +297,8 @@ export default defineComponent({
       isMarked?: boolean
     } {
       return this.cards[this.index] || {}
-    },
-  },
+    }
+  }
 })
 </script>
 

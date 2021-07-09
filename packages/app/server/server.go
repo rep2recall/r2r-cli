@@ -147,7 +147,7 @@ func Serve(opts ServerOptions) Server {
 		Router: app.Group(
 			"/api",
 			limiter.New(limiter.Config{
-				Max:        10,
+				Max:        50,
 				Expiration: 1 * time.Second,
 			}),
 			jwtware.New(jwtware.Config{
