@@ -1,8 +1,11 @@
 package browser
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
+	"strings"
 )
 
 // Browser - Container for Chrome/Edge locator
@@ -52,7 +55,6 @@ func (Browser) locateChrome() string {
 			os.Getenv("LocalAppData") + "/Chromium/Application/chrome.exe",
 			os.Getenv("ProgramFiles") + "/Chromium/Application/chrome.exe",
 			os.Getenv("ProgramFiles(x86)") + "/Chromium/Application/chrome.exe",
-			// TODO: Add Chromium
 		}
 	default:
 		paths = []string{
@@ -72,6 +74,46 @@ func (Browser) locateChrome() string {
 		}
 
 		return path
+	}
+
+	if runtime.GOOS == "linux" {
+		flatpakSet := make(map[string]bool)
+
+		b, e := exec.Command("flatpak", "list", "--columns=application").Output()
+		if e == nil && len(b) > 0 {
+			for _, p := range strings.Split(string(b), "\n") {
+				flatpakSet[p] = true
+			}
+		}
+
+		if len(flatpakSet) > 0 {
+			appIDs := []string{
+				// "com.google.Chrome",
+				"org.chromium.Chromium",
+				"com.github.Eloston.UngoogledChromium",
+			}
+			paths = make([]string, 0)
+
+			for _, id := range appIDs {
+				if flatpakSet[id] {
+					paths = append(
+						paths,
+						fmt.Sprintf("/var/lib/flatpak/exports/bin/%s", id),
+						os.Getenv("HOME")+fmt.Sprintf("/.local/share/flatpak/exports/bin/%s", id),
+					)
+				}
+			}
+
+			if len(paths) > 0 {
+				for _, path := range paths {
+					if _, err := os.Stat(path); os.IsNotExist(err) {
+						continue
+					}
+
+					return path
+				}
+			}
+		}
 	}
 
 	return ""
