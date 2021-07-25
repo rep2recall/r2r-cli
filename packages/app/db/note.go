@@ -26,10 +26,9 @@ type Note struct {
 type NoteAttr struct {
 	ID        uint
 	CreatedAt time.Time
-	UpdatedAt time.Time      `gorm:"index"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	NoteID    string         `gorm:"index:idx_note_attr_u,unique"`
-	Key       string         `gorm:"index:idx_note_attr_u,unique"`
+	UpdatedAt time.Time `gorm:"index"`
+	NoteID    string    `gorm:"index:idx_note_attr_u,unique"`
+	Key       string    `gorm:"index:idx_note_attr_u,unique"`
 	Data      NoteData
 	Lang      string
 }

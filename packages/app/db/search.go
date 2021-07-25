@@ -240,7 +240,7 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 		switch str.Key {
 		case "tag":
 			return tx.Where("card.tag LIKE '% '||?||' %'", value)
-		case "status":
+		case "is":
 			switch value {
 			case "new":
 				return tx.Where("card.next_review IS NULL")

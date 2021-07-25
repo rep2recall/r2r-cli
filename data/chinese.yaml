@@ -16,6 +16,17 @@ model:
           <% }) %>
         </ul>
       </p></p><% } %>
+      <% if (it.sentences && it.sentences.length) { %><p>Sentences: 
+        <ul>
+          <% it.sentences.map(r => { %>
+            <li> <span class="clickable" onclick="speak(innerText)"> <%= r.cmn %> </span>
+              <ul>
+                <li> <%= r.eng %> </li>
+              </ul>
+            </li>
+          <% }) %>
+        </ul>
+      </p></p><% } %>
     shared: |
       <style>
       * {
@@ -104,6 +115,18 @@ model:
 
           if (!it.pinyin) {
             it.pinyin = [toPinyin(it.chinese)]
+          }
+
+          if (!it.sentences || !it.sentences.length) {
+            const r = await fetch(`https://zhres.herokuapp.com/api/sentence/q`, {
+              method: 'POST',
+              body: JSON.stringify({ q: it.chinese, limit: 5 }),
+              headers: { 'Content-Type': 'application/json' }
+            })
+            if (r.ok) {
+              const { result } = await r.json()
+              it.sentences = result
+            }
           }
         %>
 template:
