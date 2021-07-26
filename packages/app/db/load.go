@@ -20,6 +20,13 @@ import (
 
 var validate *validator.Validate
 
+type LoadedNoteStruct struct {
+	Key     string
+	ID      string                 `validate:"required,uuid"`
+	ModelID string                 `validate:"required,uuid" yaml:"modelId"`
+	Data    map[string]interface{} `validate:"required"`
+}
+
 type LoadedStruct struct {
 	Model []struct {
 		ID        string `validate:"required,uuid"`
@@ -38,12 +45,7 @@ type LoadedStruct struct {
 		Shared  string
 		If      string
 	} `validate:"dive"`
-	Note []struct {
-		Key     string
-		ID      string                 `validate:"required,uuid"`
-		ModelID string                 `validate:"required,uuid" yaml:"modelId"`
-		Data    map[string]interface{} `validate:"required"`
-	} `validate:"dive"`
+	Note []LoadedNoteStruct `validate:"dive"`
 	Card []struct {
 		ID         string `validate:"required,uuid"`
 		TemplateID string `validate:"required,uuid" yaml:"templateId"`
@@ -102,6 +104,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	}
 
 	modelGenMap := make(map[string]map[string]interface{})
+	noteGenMap := make(map[string]LoadedNoteStruct)
+	var toGenerate []*browser.EvalContext
 
 	for _, m := range loadFile.Model {
 		if m.Generated != nil {
@@ -119,6 +123,36 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			Generated: m.Generated,
 		}); r.Error != nil {
 			return r.Error
+		}
+
+		if m.Generated["_"] != nil {
+			var notes []Note
+
+			if r := tx.Model(&Note{}).
+				Preload("Attrs").
+				Where("model_id = ?", m.ID).
+				Find(&notes); r.Error != nil {
+				return r.Error
+			}
+
+			for _, n := range notes {
+				noteGenMap[n.ID] = LoadedNoteStruct{
+					Key:     n.Key,
+					ID:      n.ID,
+					ModelID: n.ModelID,
+					Data:    make(map[string]interface{}),
+				}
+
+				for _, a := range n.Attrs {
+					key := a.Key
+					v, e := a.Data.Get()
+					if e != nil {
+						return e
+					}
+
+					noteGenMap[n.ID].Data[key] = v
+				}
+			}
 		}
 	}
 
@@ -138,7 +172,6 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		}
 	}
 
-	var toGenerate []*browser.EvalContext
 	for _, n := range loadFile.Note {
 		if n.ModelID != "" && modelGenMap[n.ModelID] == nil {
 			var m Model
@@ -151,35 +184,39 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		}
 
 		if modelGenMap[n.ModelID] != nil && modelGenMap[n.ModelID]["_"] != nil {
-			jsb, e := json.Marshal(modelGenMap[n.ModelID]["_"].(string))
-			if e != nil {
-				return e
-			}
-			datab, e := json.Marshal(n.Data)
-			if e != nil {
-				return e
-			}
-			idb, e := json.Marshal(n.ID)
-			if e != nil {
-				return e
-			}
-
-			toGenerate = append(toGenerate, &browser.EvalContext{
-				JS: fmt.Sprintf(
-					`(async function() {
-						const data = %s;
-						await Eta.renderAsync(%s, data);
-						return {
-							id: %s,
-							data
-						};
-					})();`,
-					string(datab),
-					string(jsb),
-					string(idb),
-				),
-			})
+			noteGenMap[n.ID] = n
 		}
+	}
+
+	for _, n := range noteGenMap {
+		jsb, e := json.Marshal(modelGenMap[n.ModelID]["_"].(string))
+		if e != nil {
+			return e
+		}
+		datab, e := json.Marshal(n.Data)
+		if e != nil {
+			return e
+		}
+		idb, e := json.Marshal(n.ID)
+		if e != nil {
+			return e
+		}
+
+		toGenerate = append(toGenerate, &browser.EvalContext{
+			JS: fmt.Sprintf(
+				`(async function() {
+					const data = %s;
+					await Eta.renderAsync(%s, data);
+					return {
+						id: %s,
+						data
+					};
+				})();`,
+				string(datab),
+				string(jsb),
+				string(idb),
+			),
+		})
 	}
 
 	noteGenResultMap := make(map[string]map[string]interface{})
@@ -218,7 +255,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		}
 	}
 
-	for _, n := range loadFile.Note {
+	for _, n := range noteGenMap {
 		if noteGenResultMap[n.ID] != nil {
 			for key, v := range noteGenResultMap[n.ID] {
 				if n.Data[key] == nil {
