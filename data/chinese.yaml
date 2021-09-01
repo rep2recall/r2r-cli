@@ -93,7 +93,7 @@ model:
         }
       })()
       </script>
-    generated:
+    generator:
       _: |
         <%
           if (!it.pinyin) {

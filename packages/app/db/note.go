@@ -29,7 +29,7 @@ type NoteAttr struct {
 	UpdatedAt time.Time `gorm:"index"`
 	NoteID    string    `gorm:"index:idx_note_attr_u,unique"`
 	Key       string    `gorm:"index:idx_note_attr_u,unique"`
-	Data      NoteData
+	Value     NoteData
 	Lang      string
 }
 

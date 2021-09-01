@@ -80,7 +80,7 @@ func main() {
 				var authOutput struct {
 					Token string `json:"token"`
 				}
-				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.ServerSecret()).Struct(&authOutput)
+				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
 				if e != nil {
 					log.Fatalln(e)
 				}
@@ -288,7 +288,7 @@ func main() {
 			var authOutput struct {
 				Token string `json:"token"`
 			}
-			code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.ServerSecret()).Struct(&authOutput)
+			code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
 			if e != nil {
 				log.Fatalln(e)
 			}

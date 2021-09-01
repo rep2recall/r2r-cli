@@ -12,7 +12,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.13.0
 	github.com/gofiber/jwt/v2 v2.2.2
 	github.com/google/uuid v1.2.0
-	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7

@@ -34,7 +34,7 @@ type LoadedStruct struct {
 		Front     string
 		Back      string
 		Shared    string
-		Generated map[string]interface{} `validate:"blank-is-string"`
+		Generator map[string]interface{} `validate:"blank-is-string"`
 	} `validate:"dive"`
 	Template []struct {
 		ID      string `validate:"required,uuid"`
@@ -81,7 +81,7 @@ func init() {
 func LoadStruct(f string) (LoadedStruct, error) {
 	var loadFile LoadedStruct
 
-	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir(), f))
+	b, e := ioutil.ReadFile(filepath.Join(shared.UserDataDir, f))
 	if e != nil {
 		return loadFile, e
 	}
@@ -108,8 +108,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	var toGenerate []*browser.EvalContext
 
 	for _, m := range loadFile.Model {
-		if m.Generated != nil {
-			modelGenMap[m.ID] = m.Generated
+		if m.Generator != nil {
+			modelGenMap[m.ID] = m.Generator
 		}
 
 		if r := tx.Clauses(clause.OnConflict{
@@ -120,12 +120,12 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			Front:     m.Front,
 			Back:      m.Back,
 			Shared:    m.Shared,
-			Generated: m.Generated,
+			Generator: m.Generator,
 		}); r.Error != nil {
 			return r.Error
 		}
 
-		if m.Generated["_"] != nil {
+		if m.Generator["_"] != nil {
 			var notes []Note
 
 			if r := tx.Model(&Note{}).
@@ -145,7 +145,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 
 				for _, a := range n.Attrs {
 					key := a.Key
-					v, e := a.Data.Get()
+					v, e := a.Value.Get()
 					if e != nil {
 						return e
 					}
@@ -178,8 +178,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			if r := tx.Where("id = ?", n.ModelID).First(&m); r.Error != nil {
 				return r.Error
 			}
-			if m.Generated != nil {
-				modelGenMap[n.ModelID] = m.Generated
+			if m.Generator != nil {
+				modelGenMap[n.ModelID] = m.Generator
 			}
 		}
 
@@ -222,7 +222,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 	noteGenResultMap := make(map[string]map[string]interface{})
 	plugins := []string{}
 
-	e = filepath.Walk(filepath.Join(shared.UserDataDir(), "plugins"), func(path string, info fs.FileInfo, err error) error {
+	e = filepath.Walk(filepath.Join(shared.UserDataDir, "plugins", "js"), func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -283,8 +283,8 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		}
 
 		for key, v := range n.Data {
-			data := NoteData{}
-			if err := data.Set(v); err != nil {
+			value := NoteData{}
+			if err := value.Set(v); err != nil {
 				return err
 			}
 
@@ -293,7 +293,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			}).Create(&NoteAttr{
 				NoteID: noteResult.ID,
 				Key:    key,
-				Data:   data,
+				Value:  value,
 			}); r.Error != nil {
 				return r.Error
 			}
@@ -369,7 +369,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 
 				for _, a := range n.Attrs {
 					k := a.Key
-					v, e := a.Data.Get()
+					v, e := a.Value.Get()
 					if e != nil {
 						return e
 					}

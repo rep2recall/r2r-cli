@@ -21,7 +21,7 @@ type Model struct {
 	Front     string
 	Back      string
 	Shared    string
-	Generated MapStringUnknown
+	Generator MapStringUnknown
 }
 
 type MapStringUnknown map[string]interface{}
