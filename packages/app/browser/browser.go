@@ -88,7 +88,6 @@ func (Browser) locateChrome() string {
 
 		if len(flatpakSet) > 0 {
 			appIDs := []string{
-				// "com.google.Chrome",
 				"org.chromium.Chromium",
 				"com.github.Eloston.UngoogledChromium",
 			}
@@ -124,7 +123,7 @@ func (Browser) locateEdge() string {
 	switch runtime.GOOS {
 	case "darwin":
 		paths = []string{
-			// TODO: check on macOS
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 			"/usr/bin/microsoft-edge",
 			"/usr/bin/microsoft-edge-beta",
 			"/usr/bin/microsoft-edge-dev",

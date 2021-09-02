@@ -71,11 +71,11 @@ jobs:
 
           npm i -g yarn
           yarn install --prefer-offline --frozen-lockfile
-          yarn build
+          yarn build --outDir dist
 
           rm -rf ~/cache/frontend
           mkdir -p ~/cache/frontend
-          cp -r ../app/public/* ~/cache/frontend
+          cp -r ./dist/* ~/cache/frontend
 
           touch ./REBUILD_FRONTEND
 
@@ -156,16 +156,14 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
 
-          rm -rf ./plugins/*
-
       - name: Packaging
         if: env.REBUILD_APP || env.REBUILD_FRONTEND || github.event_name == 'release'
         run: |
-          mkdir dist
+          rm -r dist
+          mkdir -p dist/plugins/{app,js}
 
           if [ -f packages/app/rep2recall ]; then
             cp packages/app/rep2recall dist/
-            cp -r packages/app/plugins dist/
           else
             cp -r ~/cache/app/* dist/
           fi
@@ -270,16 +268,14 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall
 
-          rm -rf ./plugins/*
-
       - name: Packaging
         if: env.REBUILD_APP || env.REBUILD_FRONTEND || github.event_name == 'release'
         run: |
-          mkdir dist
+          rm -r dist
+          mkdir -p dist/plugins/{app,js}
 
           if [ -f packages/app/rep2recall ]; then
             cp packages/app/rep2recall dist/rep2recall.app
-            cp -r packages/app/plugins dist/
           else
             cp -r ~/cache/app/* dist/
           fi
@@ -387,17 +383,15 @@ jobs:
           cd packages/app
           go build --tags "sqlite_fts5" -o rep2recall.exe
 
-          rm -rf ./plugins/*
-
       - name: Packaging
         if: env.REBUILD_APP || env.REBUILD_FRONTEND || github.event_name == 'release'
         shell: bash
         run: |
-          mkdir dist
+          rm -r dist
+          mkdir -p dist/plugins/{app,js}
 
           if [ -f packages/app/rep2recall.exe ]; then
             cp packages/app/rep2recall.exe dist/
-            cp -r packages/app/plugins dist/
           else
             cp -r ~/cache/app/* dist/
           fi

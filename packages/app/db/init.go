@@ -31,7 +31,7 @@ func init() {
 func Connect() *gorm.DB {
 	db, err := gorm.Open(gormSqlite.Dialector{
 		DriverName: "sqlite3_custom",
-		DSN:        filepath.Join(shared.UserDataDir(), "data.db"),
+		DSN:        filepath.Join(shared.UserDataDir, shared.Config.DB),
 	}, &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,

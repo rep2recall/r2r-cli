@@ -53,13 +53,3 @@ func GenerateRandomString(n int) (string, error) {
 	}
 	return string(bytes), nil
 }
-
-func ServerSecret() string {
-	return GetenvOrSetDefaultFn("SECRET", func() string {
-		s, e := GenerateRandomString(32)
-		if e != nil {
-			panic(e)
-		}
-		return s
-	})
-}

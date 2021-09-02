@@ -36,7 +36,7 @@ func (r *Router) cardRouter() {
 
 		for _, a := range card.Note.Attrs {
 			key := a.Key
-			v, e := a.Data.Get()
+			v, e := a.Value.Get()
 			if e != nil {
 				return fiber.NewError(fiber.StatusInternalServerError, e.Error())
 			}

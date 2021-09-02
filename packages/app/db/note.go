@@ -29,7 +29,7 @@ type NoteAttr struct {
 	UpdatedAt time.Time `gorm:"index"`
 	NoteID    string    `gorm:"index:idx_note_attr_u,unique"`
 	Key       string    `gorm:"index:idx_note_attr_u,unique"`
-	Data      NoteData
+	Value     NoteData
 	Lang      string
 }
 
@@ -89,7 +89,7 @@ func NoteFTSInit(tx *gorm.DB) error {
 	CREATE VIRTUAL TABLE IF NOT EXISTS note_fts USING fts5(
 		note_id UNINDEXED,
 		key,
-		data,
+		value,
 		content=note_attr,
 		content_rowid=id,
 		tokenize=porter
@@ -97,14 +97,14 @@ func NoteFTSInit(tx *gorm.DB) error {
 
 	-- Triggers to keep the FTS index up to date.
 	CREATE TRIGGER IF NOT EXISTS t_note_attr_ai AFTER INSERT ON note_attr BEGIN
-		INSERT INTO note_fts(rowid, note_id, key, data) VALUES (new.id, new.note_id, new.key, tokenize(new.data, new.lang));
+		INSERT INTO note_fts(rowid, note_id, key, value) VALUES (new.id, new.note_id, new.key, tokenize(new.value, new.lang));
 	END;
 	CREATE TRIGGER IF NOT EXISTS t_note_attr_ad AFTER DELETE ON note_attr BEGIN
-		INSERT INTO note_fts(note_fts, rowid, note_id, key, data) VALUES ('delete', old.id, old.note_id, old.key, tokenize(old.data, old.lang));
+		INSERT INTO note_fts(note_fts, rowid, note_id, key, value) VALUES ('delete', old.id, old.note_id, old.key, tokenize(old.value, old.lang));
 	END;
 	CREATE TRIGGER IF NOT EXISTS t_note_attr_au AFTER UPDATE ON note_attr BEGIN
-		INSERT INTO note_fts(note_fts, rowid, note_id, key, data) VALUES ('delete', old.id, old.note_id, old.key, tokenize(old.data, old.lang));
-		INSERT INTO note_fts(rowid, note_id, key, data) VALUES (new.id, new.note_id, new.key, tokenize(new.data, new.lang));
+		INSERT INTO note_fts(note_fts, rowid, note_id, key, value) VALUES ('delete', old.id, old.note_id, old.key, tokenize(old.value, old.lang));
+		INSERT INTO note_fts(rowid, note_id, key, value) VALUES (new.id, new.note_id, new.key, tokenize(new.value, new.lang));
 	END;
 	`)
 	if r.Error != nil {

@@ -38,10 +38,9 @@ type ServerOptions struct {
 }
 
 func Serve(opts ServerOptions) Server {
-	f, _ := os.Create(filepath.Join(shared.ExecDir, "server.log"))
+	f, _ := os.Create(filepath.Join(shared.UserDataDir, "server.log"))
 
 	app := fiber.New()
-	shared.ServerSecret()
 
 	r := Server{
 		Engine: app,
@@ -120,7 +119,7 @@ func Serve(opts ServerOptions) Server {
 		}),
 		basicauth.New(basicauth.Config{
 			Users: map[string]string{
-				"DEFAULT": shared.ServerSecret(),
+				"DEFAULT": shared.Config.Secret,
 			},
 		}),
 		func(c *fiber.Ctx) error {
