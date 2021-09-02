@@ -19,7 +19,7 @@ export default defineConfig({
     rollupOptions: {
       external: /^\/vendor\//,
     },
-    outDir: '../../dist/public',
+    outDir: '../../dist/linux/public',
     emptyOutDir: true
   },
   server: {

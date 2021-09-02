@@ -1,10 +1,10 @@
 build:
   command: |
-    go build --tags "{{ .buildTags }}" -o ../../dist/{{ .exe }}
+    go build --tags "{{ .buildTags }}" -o ../../dist/linux/{{ .exe }}
 run:
   command: |
     robo build
-    ../../dist/{{ .exe }} $@
+    ../../dist/linux/{{ .exe }} $@
 
 variables:
   buildTags: sqlite_fts5
