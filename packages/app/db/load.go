@@ -289,7 +289,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			}
 
 			if r := tx.Clauses(clause.OnConflict{
-				DoUpdates: clause.AssignmentColumns([]string{"data"}),
+				DoUpdates: clause.AssignmentColumns([]string{"value"}),
 			}).Create(&NoteAttr{
 				NoteID: noteResult.ID,
 				Key:    key,

@@ -121,7 +121,7 @@
 
         <form class="field" @submit.prevent="doQuiz">
           <button
-            :disabled="!(stat.next || stat.due)"
+            :disabled="stat.next || !(stat.due || stat.new)"
             name="quiz"
             class="button is-success"
             type="submit"
