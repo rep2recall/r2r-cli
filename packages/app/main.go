@@ -16,8 +16,7 @@ import (
 )
 
 func main() {
-	version := "0.2.1"
-	defaultPort := 25459
+	version := "0.3.0"
 
 	commando.
 		SetExecutableName("rep2recall").
@@ -27,20 +26,22 @@ func main() {
 	commando.
 		Register(nil).
 		SetShortDescription("open in GUI mode, for full interaction").
-		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).
+		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
+		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).
 		AddFlag("debug", "whether to run in debug mode", commando.Bool, false).
 		AddFlag("browser", "browser to open (default: Chrome with Edge fallback)", commando.String, "."). // not required
 		AddFlag("server", "run in server mode (don't open the browser)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			port := defaultPort
 			debug := false
 			browserOfChoice := "."
 			isServer := false
 
 			for k, v := range flags {
 				switch k {
-				case "port":
-					port = v.Value.(int)
+				case "db", "o":
+					shared.Config.DB = v.Value.(string)
+				case "port", "p":
+					shared.Config.Port = v.Value.(int)
 				case "debug":
 					debug = v.Value.(bool)
 				case "browser":
@@ -54,7 +55,7 @@ func main() {
 				s := server.Serve(server.ServerOptions{
 					Proxy: false,
 					Debug: debug,
-					Port:  port,
+					Port:  shared.Config.Port,
 				})
 
 				forever := make(chan bool)
@@ -70,12 +71,12 @@ func main() {
 				s := server.Serve(server.ServerOptions{
 					Proxy: false,
 					Debug: debug,
-					Port:  port,
+					Port:  shared.Config.Port,
 				})
 
 				s.WaitUntilReady()
 
-				rootURL := fmt.Sprintf("http://localhost:%d", port)
+				rootURL := fmt.Sprintf("http://localhost:%d", shared.Config.Port)
 
 				var authOutput struct {
 					Token string `json:"token"`
@@ -100,20 +101,22 @@ func main() {
 	commando.
 		Register("proxy").
 		SetShortDescription("start as proxy server, for development").
-		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).
+		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
+		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			port := defaultPort
-
 			for k, v := range flags {
-				if k == "port" {
-					port = v.Value.(int)
+				switch k {
+				case "db", "o":
+					shared.Config.DB = v.Value.(string)
+				case "port", "p":
+					shared.Config.Port = v.Value.(int)
 				}
 			}
 
 			s := server.Serve(server.ServerOptions{
 				Proxy: true,
 				Debug: true,
-				Port:  port,
+				Port:  shared.Config.Port,
 			})
 
 			forever := make(chan bool)
@@ -129,21 +132,17 @@ func main() {
 		SetShortDescription("load the YAML into the database and exit").
 		AddArgument("files...", "directory or YAML to scan for IDs", ""). // required
 		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
-		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).
+		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
+		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
 			debug := false
-			port := defaultPort
-
-			for k, v := range flags {
-				if k == "debug" {
-					debug = v.Value.(bool)
-				}
-			}
 
 			for k, v := range flags {
 				switch k {
-				case "port":
-					port = v.Value.(int)
+				case "db", "o":
+					shared.Config.DB = v.Value.(string)
+				case "port", "p":
+					shared.Config.Port = v.Value.(int)
 				case "debug":
 					debug = v.Value.(bool)
 				}
@@ -152,7 +151,7 @@ func main() {
 			s := server.Serve(server.ServerOptions{
 				Proxy: false,
 				Debug: debug,
-				Port:  port,
+				Port:  shared.Config.Port,
 			})
 
 			s.WaitUntilReady()
@@ -162,7 +161,7 @@ func main() {
 					if k == "files" {
 						if e := db.Load(tx, v.Value, db.LoadOptions{
 							Debug: debug,
-							Port:  port,
+							Port:  shared.Config.Port,
 						}); e != nil {
 							return e
 						}
@@ -180,9 +179,17 @@ func main() {
 	commando.
 		Register("clean").
 		SetShortDescription("clean the to-be-delete part of the database and exit").
+		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
 		AddArgument("files...", "directory or YAML to scan for IDs, or none to use the whole database", "."). // not required
 		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                       // not required
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
+			for k, v := range flags {
+				switch k {
+				case "db", "o":
+					shared.Config.DB = v.Value.(string)
+				}
+			}
+
 			database := db.Connect()
 
 			if e := database.Transaction(func(tx *gorm.DB) error {
@@ -227,13 +234,13 @@ func main() {
 	commando.
 		Register("quiz").
 		SetShortDescription("open the quiz window only").
+		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
 		AddArgument("files...", "directory or YAML to scan for IDs, or none to use the whole database", "."). // not required
 		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                       // not required
-		AddFlag("port,p", "port to run the server", commando.Int, defaultPort).                               // not required
+		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).                        // not required
 		AddFlag("browser", "browser to open (default: Chrome with Edge fallback)", commando.String, ".").     // not required
 		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			port := defaultPort
 			debug := false
 			browserOfChoice := ""
 			filter := ""
@@ -255,8 +262,10 @@ func main() {
 
 			for k, v := range flags {
 				switch k {
-				case "port":
-					port = v.Value.(int)
+				case "db", "o":
+					shared.Config.DB = v.Value.(string)
+				case "port", "p":
+					shared.Config.Port = v.Value.(int)
 				case "debug":
 					debug = v.Value.(bool)
 				case "browser":
@@ -278,12 +287,12 @@ func main() {
 			s := server.Serve(server.ServerOptions{
 				Proxy: false,
 				Debug: debug,
-				Port:  port,
+				Port:  shared.Config.Port,
 			})
 
 			s.WaitUntilReady()
 
-			rootURL := fmt.Sprintf("http://localhost:%d", port)
+			rootURL := fmt.Sprintf("http://localhost:%d", shared.Config.Port)
 
 			var authOutput struct {
 				Token string `json:"token"`

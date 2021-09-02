@@ -16,6 +16,8 @@ var ExecDir string
 var UserDataDir string
 
 type ConfigStruct struct {
+	DB      string
+	Port    int
 	Secret  string
 	Plugins []string
 	Proxy   []int
@@ -39,6 +41,14 @@ func init() {
 		if e := yaml.Unmarshal(b, &Config); e != nil {
 			log.Fatalln(e)
 		}
+	}
+
+	if Config.DB == "" {
+		Config.DB = "data.db"
+	}
+
+	if Config.Port == 0 {
+		Config.Port = 25459
 	}
 
 	if Config.Secret == "" {

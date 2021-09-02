@@ -1,3 +1,4 @@
 /config.yaml
-/data.db
+/*.db
+/*.db-*
 /server.log
