@@ -51,4 +51,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 )
 
-require github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
+require (
+	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
+	github.com/patarapolw/atexit v0.4.0 // indirect
+)

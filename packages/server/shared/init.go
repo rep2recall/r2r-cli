@@ -2,7 +2,6 @@ package shared
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -16,12 +15,10 @@ var ExecDir string
 var UserDataDir string
 
 type SegmenterStruct struct {
-	Lang    string
 	Command []string
 }
 
 type ProxyStruct struct {
-	Path    string
 	Port    int
 	Command []string
 }
@@ -30,8 +27,8 @@ type ConfigStruct struct {
 	DB        string
 	Port      int
 	Secret    string
-	Segmenter []SegmenterStruct
-	Proxy     []ProxyStruct
+	Segmenter map[string]SegmenterStruct // map[Lang]SegmenterStruct
+	Proxy     map[string]ProxyStruct     // map[Path]ProxyStruct
 }
 
 var Config ConfigStruct
@@ -46,11 +43,11 @@ func init() {
 	if _, e := os.Stat(filepath.Join(UserDataDir, "config.yaml")); e == nil {
 		b, e := ioutil.ReadFile(filepath.Join(UserDataDir, "config.yaml"))
 		if e != nil {
-			log.Fatalln(e)
+			Fatalln(e)
 		}
 
 		if e := yaml.Unmarshal(b, &Config); e != nil {
-			log.Fatalln(e)
+			Fatalln(e)
 		}
 	}
 
@@ -65,17 +62,17 @@ func init() {
 	if Config.Secret == "" {
 		s, e := GenerateRandomString(32)
 		if e != nil {
-			log.Fatalln(e)
+			Fatalln(e)
 		}
 		Config.Secret = s
 	}
 
 	b, e := yaml.Marshal(&Config)
 	if e != nil {
-		log.Fatalln(e)
+		Fatalln(e)
 	}
 	e = ioutil.WriteFile(filepath.Join(UserDataDir, "config.yaml"), b, 0644)
 	if e != nil {
-		log.Fatalln(e)
+		Fatalln(e)
 	}
 }

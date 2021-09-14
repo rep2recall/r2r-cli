@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/patarapolw/atexit"
 	"github.com/rep2recall/r2r-cli/browser"
 	"github.com/rep2recall/r2r-cli/db"
 	"github.com/rep2recall/r2r-cli/server"
@@ -62,6 +63,8 @@ func main() {
 				}
 			}
 
+			atexit.Listen()
+
 			switch mode {
 			case "server", "proxy":
 				s := server.Serve(server.ServerOptions{
@@ -103,10 +106,10 @@ func main() {
 				}
 				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
 				if e != nil {
-					log.Fatalln(e)
+					shared.Fatalln(e)
 				}
 				if code != 200 {
-					log.Fatalln(fiber.ErrUnauthorized)
+					shared.Fatalln(fiber.ErrUnauthorized)
 				}
 
 				b := browser.Browser{
@@ -142,10 +145,10 @@ func main() {
 				}
 				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
 				if e != nil {
-					log.Fatalln(e)
+					shared.Fatalln(e)
 				}
 				if code != 200 {
-					log.Fatalln(fiber.ErrUnauthorized)
+					shared.Fatalln(fiber.ErrUnauthorized)
 				}
 
 				b := browser.Browser{
@@ -177,6 +180,8 @@ func main() {
 					debug = v.Value.(bool)
 				}
 			}
+
+			atexit.Listen()
 
 			s := server.Serve(server.ServerOptions{
 				Proxy: false,
