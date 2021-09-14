@@ -6,9 +6,18 @@ def is_pyinstaller() -> bool:
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-def get_path(*s: list[str]) -> str:
-    dirname = path.abspath(path.dirname(path.dirname(__file__)))
-    if is_pyinstaller():
-        dirname = getattr(sys, "_MEIPASS")
+def get_internal_path(*s: list[str]) -> str:
+    return path.join(
+        getattr(sys, "_MEIPASS")
+        if is_pyinstaller()
+        else path.abspath(path.dirname(path.dirname(__file__))),
+        *s
+    )
 
-    return path.join(dirname, *s)
+
+def get_external_path(*s: list[str]) -> str:
+    return (
+        path.join(path.dirname(sys.executable), *s)
+        if is_pyinstaller()
+        else get_internal_path(*s)
+    )
