@@ -1,5 +1,0 @@
-build:
-  command: |
-    pyinstaller --onefile \
-      --add-data=./pyproject.toml:. \
-      --name r2r app.py

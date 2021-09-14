@@ -7,7 +7,7 @@
             "path": "packages/frontend"
         },
         {
-            "path": "packages/python"
+            "path": "packages/server"
         },
         {
             "path": "."
