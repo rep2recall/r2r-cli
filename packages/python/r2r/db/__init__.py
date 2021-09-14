@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import functools
+from contextvars import ContextVar
 import peewee as pw
 from playhouse import sqlite_ext
 
@@ -8,10 +9,28 @@ from .quiz import srs_map, get_next_review
 from ..dir import get_external_path
 from ..shared import config
 
+db_state_default = {"closed": None, "conn": None, "ctx": None, "transactions": None}
+db_state = ContextVar("db_state", default=db_state_default.copy())
+
+
+class PeeweeConnectionState(pw._ConnectionState):
+    def __init__(self, **kwargs):
+        super().__setattr__("_state", db_state)
+        super().__init__(**kwargs)
+
+    def __setattr__(self, name, value):
+        self._state.get()[name] = value
+
+    def __getattr__(self, name):
+        return self._state.get()[name]
+
+
 db = sqlite_ext.SqliteExtDatabase(
     get_external_path(config["db"]),
+    check_same_thread=False,
     pragmas={"journal_mode": "wal", "cache_size": 10000, "foreign_keys": 1},
 )
+db._state = PeeweeConnectionState()
 
 
 @db.func()
@@ -165,3 +184,9 @@ class Card(TimestampModel):
             self.next_review = get_next_review()
         else:
             self.next_review = get_next_review(self.srs_level)
+
+
+def create_tables():
+    db.connect()
+    db.create_tables([Model, Template, Note, Attr, Card])
+    db.close()

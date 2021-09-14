@@ -16,10 +16,12 @@ pkg = toml.load(get_internal_path("pyproject.toml"))
     help=f"port to run the server  [default: {config['port']}]",
 )
 @click.option(
+    "-b",
     "--browser",
     help="browser to open  [default: Chrome with Edge fallback]",
 )
 @click.option(
+    "-m",
     "--mode",
     type=click.Choice(["server", "proxy", "quiz"]),
     help="special mode to run in (server / proxy / quiz)  [optional]",
