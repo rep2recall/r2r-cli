@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/patarapolw/atexit"
 	"github.com/yanyiwu/gojieba"
 )
@@ -26,6 +27,7 @@ func main() {
 		fmt.Println(strings.Join(Tokenize(os.Args[1]), " "))
 	} else {
 		app := fiber.New()
+		app.Use(logger.New())
 		app.Get("/proxy/zh/tokenize", func(c *fiber.Ctx) error {
 			var query struct {
 				Q string `query:"q" validate:"required"`

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -142,9 +143,12 @@ func Serve(opts ServerOptions) Server {
 
 	for k, v := range shared.Config.Proxy {
 		if len(v.Command) > 0 {
-			cmd := exec.Command(v.Command[0], v.Command[1:]...)
+			dir := filepath.Join(shared.UserDataDir, "plugins", "app")
+			cmd := exec.Command(filepath.Join(dir, v.Command[0]), v.Command[1:]...)
 			cmd.Env = append(cmd.Env, fmt.Sprintf("PORT=%d", v.Port))
-			cmd.Dir = filepath.Join(shared.UserDataDir, "plugins", "app")
+			cmd.Dir = dir
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 
 			r.SubCommand = append(r.SubCommand, cmd)
 			e := cmd.Start()

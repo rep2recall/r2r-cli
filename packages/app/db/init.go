@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -18,8 +19,10 @@ func tokenize(s string, lang string) string {
 		args := segmenter.Command[1:]
 		args = append(args, s)
 
-		cmd := exec.Command(segmenter.Command[0], args...)
-		cmd.Dir = filepath.Join(shared.UserDataDir, "plugins", "app")
+		dir := filepath.Join(shared.UserDataDir, "plugins", "app")
+		cmd := exec.Command(filepath.Join(dir, segmenter.Command[0]), args...)
+		cmd.Dir = dir
+		cmd.Stderr = os.Stderr
 
 		if b, e := cmd.Output(); e == nil {
 			return string(b)

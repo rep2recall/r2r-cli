@@ -1,0 +1,23 @@
+db: data.db
+port: 25459
+secret: wOs4T6OeP5GnlJ0Ws0Sc8O6u783BSh4o1IxO47BlLWG8sKJMZwvGTOtFcrfmJ4lZ
+proxy:
+  gtts:
+    port: 9019
+    command:
+    - plugin-gtts
+  ja:
+    port: 24900
+    command:
+    - plugin-ja
+  zh:
+    port: 27003
+    command:
+    - plugin-zh
+segmenter:
+  ja:
+    command:
+    - plugin-ja
+  zh:
+    command:
+    - plugin-zh
