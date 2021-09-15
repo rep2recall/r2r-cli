@@ -15,7 +15,12 @@ import (
 func tokenize(s string, lang string) string {
 	segmenter := shared.Config.Segmenter[lang]
 	if len(segmenter.Command) > 0 {
-		cmd := exec.Command(segmenter.Command[0], segmenter.Command[1:]...)
+		args := segmenter.Command[1:]
+		args = append(args, s)
+
+		cmd := exec.Command(segmenter.Command[0], args...)
+		cmd.Dir = filepath.Join(shared.UserDataDir, "plugins", "app")
+
 		if b, e := cmd.Output(); e == nil {
 			return string(b)
 		}

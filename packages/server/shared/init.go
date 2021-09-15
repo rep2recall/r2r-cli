@@ -27,8 +27,8 @@ type ConfigStruct struct {
 	DB        string
 	Port      int
 	Secret    string
-	Segmenter map[string]SegmenterStruct // map[Lang]SegmenterStruct
 	Proxy     map[string]ProxyStruct     // map[Path]ProxyStruct
+	Segmenter map[string]SegmenterStruct // map[Lang]SegmenterStruct
 }
 
 var Config ConfigStruct

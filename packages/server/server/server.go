@@ -143,7 +143,8 @@ func Serve(opts ServerOptions) Server {
 	for k, v := range shared.Config.Proxy {
 		if len(v.Command) > 0 {
 			cmd := exec.Command(v.Command[0], v.Command[1:]...)
-			cmd.Env = append([]string{fmt.Sprintf("PORT=%d", v.Port)}, cmd.Env...)
+			cmd.Env = append(cmd.Env, fmt.Sprintf("PORT=%d", v.Port))
+			cmd.Dir = filepath.Join(shared.UserDataDir, "plugins", "app")
 
 			r.SubCommand = append(r.SubCommand, cmd)
 			e := cmd.Start()
