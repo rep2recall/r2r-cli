@@ -1,12 +1,15 @@
 package shared
 
 import (
+	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/alecthomas/chroma/quick"
 	"github.com/patarapolw/atexit"
 )
 
@@ -20,7 +23,7 @@ func init() {
 		Target: f,
 	}
 
-	Logger = log.New(io.MultiWriter(LogWriter, os.Stderr), "error", log.LstdFlags)
+	Logger = log.New(LogWriter, "", log.LstdFlags)
 }
 
 func Fatalln(e ...interface{}) {
@@ -51,6 +54,13 @@ func (f filterUTF8) Write(p []byte) (n int, err error) {
 		s += "\n"
 	}
 
+	if s0, e := url.PathUnescape(s); e == nil {
+		s = s0
+	}
+
+	if err := quick.Highlight(os.Stdout, s, "JSON", "terminal256", "paraiso-dark"); err != nil {
+		fmt.Println(err)
+	}
 	return f.Target.Write([]byte(s))
 }
 

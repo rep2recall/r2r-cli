@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/patarapolw/atexit"
 	"github.com/rep2recall/r2r/shared"
@@ -47,39 +47,10 @@ func Serve(opts ServerOptions) Server {
 
 	app.Static("/", filepath.Join(shared.ExecDir, "public"))
 
-	app.Use(recover.New())
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace: true,
+	}))
 
-	app.Use(logger.New(
-		logger.Config{
-			Next: func(c *fiber.Ctx) bool {
-				body := c.Body()
-				prettyBody := ""
-				if len(body) > 0 {
-					prettyBody = func() string {
-						var str map[string]interface{}
-						if e := json.Unmarshal(body, &str); e != nil {
-							shared.Logger.Println(e)
-							return ""
-						}
-
-						b, e := json.MarshalIndent(str, "", "  ")
-						if e != nil {
-							shared.Logger.Println(e)
-							return ""
-						}
-
-						return string(b)
-					}()
-				}
-
-				if prettyBody != "" {
-					shared.Logger.Printf("body: %s", prettyBody)
-				}
-
-				return false
-			},
-		},
-	))
 	app.Use(logger.New(
 		logger.Config{
 			Output: shared.LogWriter,
@@ -155,9 +126,7 @@ func Serve(opts ServerOptions) Server {
 			if e == nil {
 				port := v.Port
 				proxyRouter.Group(k).Use(func(c *fiber.Ctx) error {
-					return c.Redirect(
-						fmt.Sprintf("http://localhost:%d", port) + c.OriginalURL()[len(c.Route().Path):],
-					)
+					return proxy.Do(c, fmt.Sprintf("http://localhost:%d", port)+c.OriginalURL()[len(c.Route().Path):])
 				})
 			} else {
 				shared.Logger.Println(e)
