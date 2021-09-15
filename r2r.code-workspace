@@ -7,6 +7,15 @@
             "path": "packages/frontend"
         },
         {
+            "path": "packages/plugin-gtts"
+        },
+        {
+            "path": "packages/plugin-ja"
+        },
+        {
+            "path": "packages/plugin-zh"
+        },
+        {
             "path": "."
         }
     ],

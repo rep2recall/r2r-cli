@@ -3,7 +3,6 @@ package shared
 import (
 	"crypto/rand"
 	"io"
-	"log"
 )
 
 func init() {
@@ -17,7 +16,7 @@ func assertAvailablePRNG() {
 
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
-		log.Fatalf("crypto/rand is unavailable: Read() failed with %#v", err)
+		Logger.Fatalf("crypto/rand is unavailable: Read() failed with %#v", err)
 	}
 }
 

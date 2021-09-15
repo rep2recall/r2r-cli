@@ -4,11 +4,10 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/rep2recall/r2r/shared"
 	"gorm.io/gorm"
 )
 
@@ -66,7 +65,7 @@ func (j SpaceSeparated) Get() (map[string]bool, error) {
 	}
 
 	if len(j.Raw) < 2 || (j.Raw[0] != ' ' && j.Raw[len(j.Raw)-1] != ' ') {
-		log.New(os.Stderr, "", log.LstdFlags).Printf("invalid SpaceSeparated value: %s\n", j.Raw)
+		shared.Logger.Printf("invalid SpaceSeparated value: %s\n", j.Raw)
 		return map[string]bool{}, nil
 	}
 

@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
-	"github.com/rep2recall/rep2recall/browser"
-	"github.com/rep2recall/rep2recall/shared"
+	"github.com/rep2recall/r2r/browser"
+	"github.com/rep2recall/r2r/shared"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

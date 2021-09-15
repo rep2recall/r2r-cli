@@ -1,9 +1,5 @@
-/rep2recall
-/rep2recall.exe
-/rep2recall.app
+/r2r
+/r2r.*
+/config.yaml
 /data.db
 /data.db-*
-/public/
-/server.log
-/.env
-/.env.*

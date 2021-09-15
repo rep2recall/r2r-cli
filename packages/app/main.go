@@ -7,34 +7,38 @@ import (
 	"net/url"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/rep2recall/rep2recall/browser"
-	"github.com/rep2recall/rep2recall/db"
-	"github.com/rep2recall/rep2recall/server"
-	"github.com/rep2recall/rep2recall/shared"
+	"github.com/patarapolw/atexit"
+	"github.com/rep2recall/r2r/browser"
+	"github.com/rep2recall/r2r/db"
+	"github.com/rep2recall/r2r/server"
+	"github.com/rep2recall/r2r/shared"
 	"github.com/thatisuday/commando"
 	"gorm.io/gorm"
 )
 
 func main() {
-	version := "0.3.0"
+	version := "0.4.0"
 
 	commando.
-		SetExecutableName("rep2recall").
+		SetExecutableName("r2r").
 		SetVersion(version).
 		SetDescription("Repeat Until Recall - a simple, yet powerful, flashcard app")
 
 	commando.
 		Register(nil).
-		SetShortDescription("open in GUI mode, for full interaction").
 		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
 		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).
+		AddFlag("browser,b", "browser to open (default: Chrome with Edge fallback)", commando.String, ".").
+		AddFlag("mode,m", "mode to run in (app / server / proxy / quiz)", commando.String, "app").
+		AddFlag("file,f", "files to use (must be loaded first)", commando.String, ".").
+		AddFlag("filter", "keyword to filter", commando.String, ".").
 		AddFlag("debug", "whether to run in debug mode", commando.Bool, false).
-		AddFlag("browser", "browser to open (default: Chrome with Edge fallback)", commando.String, "."). // not required
-		AddFlag("server", "run in server mode (don't open the browser)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
 			debug := false
-			browserOfChoice := "."
-			isServer := false
+			browserOfChoice := ""
+			mode := ""
+			files := make([]string, 0)
+			filter := ""
 
 			for k, v := range flags {
 				switch k {
@@ -42,18 +46,29 @@ func main() {
 					shared.Config.DB = v.Value.(string)
 				case "port", "p":
 					shared.Config.Port = v.Value.(int)
-				case "debug":
-					debug = v.Value.(bool)
-				case "browser":
+				case "browser", "b":
 					browserOfChoice = v.Value.(string)
-				case "server":
-					isServer = v.Value.(bool)
+				case "mode", "m":
+					mode = v.Value.(string)
+				case "file", "f":
+					f := v.Value.(string)
+					if f != "." {
+						files = append(files, f)
+					}
+				case "filter":
+					value := v.Value.(string)
+					if value != "." {
+						filter = value
+					}
 				}
 			}
 
-			if isServer {
+			atexit.Listen()
+
+			switch mode {
+			case "server", "proxy":
 				s := server.Serve(server.ServerOptions{
-					Proxy: false,
+					Proxy: mode == "proxy",
 					Debug: debug,
 					Port:  shared.Config.Port,
 				})
@@ -64,7 +79,15 @@ func main() {
 				<-forever
 
 				s.Close()
-			} else {
+			case "quiz":
+				fileString := ""
+				if len(files) > 0 {
+					b, e := json.Marshal(&files)
+					if e == nil {
+						fileString = string(b)
+					}
+				}
+
 				if browserOfChoice == "." {
 					browserOfChoice = ""
 				}
@@ -83,10 +106,49 @@ func main() {
 				}
 				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
 				if e != nil {
-					log.Fatalln(e)
+					shared.Fatalln(e)
 				}
 				if code != 200 {
-					log.Fatalln(fiber.ErrUnauthorized)
+					shared.Fatalln(fiber.ErrUnauthorized)
+				}
+
+				b := browser.Browser{
+					ExecPath: browserOfChoice,
+				}
+				b.AppMode(
+					rootURL+fmt.Sprintf(
+						"/quiz?q=%s&files=%s&token=%s",
+						url.QueryEscape(filter),
+						url.QueryEscape(fileString),
+						authOutput.Token,
+					),
+					browser.WindowSize(600, 800),
+				)
+
+				s.Close()
+			default:
+				if browserOfChoice == "." {
+					browserOfChoice = ""
+				}
+				s := server.Serve(server.ServerOptions{
+					Proxy: false,
+					Debug: debug,
+					Port:  shared.Config.Port,
+				})
+
+				s.WaitUntilReady()
+
+				rootURL := fmt.Sprintf("http://localhost:%d", shared.Config.Port)
+
+				var authOutput struct {
+					Token string `json:"token"`
+				}
+				code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
+				if e != nil {
+					shared.Fatalln(e)
+				}
+				if code != 200 {
+					shared.Fatalln(fiber.ErrUnauthorized)
 				}
 
 				b := browser.Browser{
@@ -99,41 +161,12 @@ func main() {
 		})
 
 	commando.
-		Register("proxy").
-		SetShortDescription("start as proxy server, for development").
-		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
-		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).
-		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			for k, v := range flags {
-				switch k {
-				case "db", "o":
-					shared.Config.DB = v.Value.(string)
-				case "port", "p":
-					shared.Config.Port = v.Value.(int)
-				}
-			}
-
-			s := server.Serve(server.ServerOptions{
-				Proxy: true,
-				Debug: true,
-				Port:  shared.Config.Port,
-			})
-
-			forever := make(chan bool)
-
-			log.Printf("[*] To exit press CTRL+C")
-			<-forever
-
-			s.Close()
-		})
-
-	commando.
 		Register("load").
 		SetShortDescription("load the YAML into the database and exit").
 		AddArgument("files...", "directory or YAML to scan for IDs", ""). // required
-		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
 		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
 		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).
+		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
 		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
 			debug := false
 
@@ -147,6 +180,8 @@ func main() {
 					debug = v.Value.(bool)
 				}
 			}
+
+			atexit.Listen()
 
 			s := server.Serve(server.ServerOptions{
 				Proxy: false,
@@ -172,151 +207,6 @@ func main() {
 			}); e != nil {
 				panic(e)
 			}
-
-			s.Close()
-		})
-
-	commando.
-		Register("clean").
-		SetShortDescription("clean the to-be-delete part of the database and exit").
-		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
-		AddArgument("files...", "directory or YAML to scan for IDs, or none to use the whole database", "."). // not required
-		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                       // not required
-		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			for k, v := range flags {
-				switch k {
-				case "db", "o":
-					shared.Config.DB = v.Value.(string)
-				}
-			}
-
-			database := db.Connect()
-
-			if e := database.Transaction(func(tx *gorm.DB) error {
-				if e := (db.Card{}).Tidy(tx); e != nil {
-					return e
-				}
-
-				if e := (db.Note{}).Tidy(tx); e != nil {
-					return e
-				}
-
-				if e := (db.Template{}).Tidy(tx); e != nil {
-					return e
-				}
-
-				if e := (db.Model{}).Tidy(tx); e != nil {
-					return e
-				}
-
-				if r := tx.Unscoped().Where("TRUE").Delete(&db.Card{}); r.Error != nil {
-					return r.Error
-				}
-
-				if r := tx.Unscoped().Where("TRUE").Delete(&db.Note{}); r.Error != nil {
-					return r.Error
-				}
-
-				if r := tx.Unscoped().Where("TRUE").Delete(&db.Template{}); r.Error != nil {
-					return r.Error
-				}
-
-				if r := tx.Unscoped().Where("TRUE").Delete(&db.Model{}); r.Error != nil {
-					return r.Error
-				}
-
-				return nil
-			}); e != nil {
-				panic(e)
-			}
-		})
-
-	commando.
-		Register("quiz").
-		SetShortDescription("open the quiz window only").
-		AddFlag("db,o", "database to use", commando.String, shared.Config.DB).
-		AddArgument("files...", "directory or YAML to scan for IDs, or none to use the whole database", "."). // not required
-		AddFlag("filter,f", "keyword to filter", commando.String, ".").                                       // not required
-		AddFlag("port,p", "port to run the server", commando.Int, shared.Config.Port).                        // not required
-		AddFlag("browser", "browser to open (default: Chrome with Edge fallback)", commando.String, ".").     // not required
-		AddFlag("debug", "debug mode (Chrome headful mode)", commando.Bool, false).
-		SetAction(func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-			debug := false
-			browserOfChoice := ""
-			filter := ""
-			files := make([]string, 0)
-
-			for k, v := range args {
-				if k == "files" {
-					files = append(files, v.Value)
-				}
-			}
-
-			fileString := ""
-			if len(files) > 0 {
-				b, e := json.Marshal(&files)
-				if e == nil {
-					fileString = string(b)
-				}
-			}
-
-			for k, v := range flags {
-				switch k {
-				case "db", "o":
-					shared.Config.DB = v.Value.(string)
-				case "port", "p":
-					shared.Config.Port = v.Value.(int)
-				case "debug":
-					debug = v.Value.(bool)
-				case "browser":
-					value := v.Value.(string)
-					if value != "." {
-						browserOfChoice = ""
-					}
-				case "filter":
-					value := v.Value.(string)
-					if value != "." {
-						filter = value
-					}
-				}
-			}
-
-			if browserOfChoice == "." {
-				browserOfChoice = ""
-			}
-			s := server.Serve(server.ServerOptions{
-				Proxy: false,
-				Debug: debug,
-				Port:  shared.Config.Port,
-			})
-
-			s.WaitUntilReady()
-
-			rootURL := fmt.Sprintf("http://localhost:%d", shared.Config.Port)
-
-			var authOutput struct {
-				Token string `json:"token"`
-			}
-			code, _, e := fiber.Post(rootURL+"/server/login").BasicAuth("DEFAULT", shared.Config.Secret).Struct(&authOutput)
-			if e != nil {
-				log.Fatalln(e)
-			}
-			if code != 200 {
-				log.Fatalln(fiber.ErrUnauthorized)
-			}
-
-			b := browser.Browser{
-				ExecPath: browserOfChoice,
-			}
-			b.AppMode(
-				rootURL+fmt.Sprintf(
-					"/quiz?q=%s&files=%s&token=%s",
-					url.QueryEscape(filter),
-					url.QueryEscape(fileString),
-					authOutput.Token,
-				),
-				browser.WindowSize(600, 800),
-			)
 
 			s.Close()
 		})
