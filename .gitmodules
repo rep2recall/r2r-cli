@@ -1,0 +1,3 @@
+[submodule "submodules/plugin-zh"]
+	path = submodules/plugin-zh
+	url = git@github.com:rep2recall/plugin-zh.git

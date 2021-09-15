@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/ikawaha/kagome-dict/ipa"
 	"github.com/ikawaha/kagome/v2/tokenizer"
+	"github.com/rep2recall/duolog"
 )
 
 type Tokens []tokenizer.Token
@@ -60,8 +61,17 @@ func main() {
 		fmt.Println(strings.Join(Tokenize(os.Args[1]).SearchForm(), " "))
 	} else {
 		app := fiber.New()
-		app.Use(logger.New())
-		app.Get("/proxy/ja/tokenize", func(c *fiber.Ctx) error {
+
+		d := duolog.Duolog{
+			NoColor: true,
+		}
+		d.New()
+		app.Use(logger.New(logger.Config{
+			Output: d,
+			Format: "[${time}] :${port} ${status} - ${latency} ${method} ${path} ${queryParams}\n",
+		}))
+
+		app.Get("/tokenize", func(c *fiber.Ctx) error {
 			var query struct {
 				Q string `query:"q" validate:"required"`
 			}

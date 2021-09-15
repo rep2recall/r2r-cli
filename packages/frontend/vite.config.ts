@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process'
 import path from 'path'
 
 import mpa from '@patarapolw/vite-plugin-mpa'
@@ -19,7 +20,7 @@ export default defineConfig({
     rollupOptions: {
       external: /^\/vendor\//,
     },
-    outDir: '../../dist/linux/public',
+    outDir: `../../dist/${spawnSync('go', ['env', 'GOOS']).stdout.toString().trimEnd()}/public`,
     emptyOutDir: true
   },
   server: {

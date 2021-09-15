@@ -12,12 +12,22 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/rep2recall/duolog"
 )
 
 func main() {
 	app := fiber.New()
-	app.Use(logger.New())
-	app.Get("/proxy/gtts/generate", limiter.New(limiter.Config{
+
+	d := duolog.Duolog{
+		NoColor: true,
+	}
+	d.New()
+	app.Use(logger.New(logger.Config{
+		Output: d,
+		Format: "[${time}] :${port} ${status} - ${latency} ${method} ${path} ${queryParams}\n",
+	}))
+
+	app.Get("/generate", limiter.New(limiter.Config{
 		Max:        1,
 		Expiration: 1 * time.Second,
 	}), func(c *fiber.Ctx) error {

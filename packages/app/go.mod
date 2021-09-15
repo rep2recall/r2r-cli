@@ -47,10 +47,14 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/patarapolw/atexit v0.4.0
+	github.com/rep2recall/duolog v0.1.2
 	gorm.io/driver/sqlite v1.1.5
 )
 
 require (
+	github.com/alecthomas/chroma v0.9.2 // indirect
+	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
+	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

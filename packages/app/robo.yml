@@ -1,11 +1,12 @@
 build:
   command: |
-    go build --tags "{{ .buildTags }}" -o ../../dist/linux/{{ .exe }}
+    go build --tags "{{ .buildTags }}" -o "../../dist/{{ .os }}/{{ .exe }}"
 run:
   command: |
     robo build
-    ../../dist/linux/{{ .exe }} $@
+    "../../dist/{{ .os }}/{{ .exe }}" $@
 
 variables:
   buildTags: sqlite_fts5
-  exe: '"$([ $(go env GOOS) = "windows" ] && echo "r2r.exe" || echo "r2r")"'
+  exe: '"$([ {{ .os }} = "windows" ] && echo r2r.exe || echo r2r)"'
+  os: '"$(go env GOOS | tr -d "\r\n")"'

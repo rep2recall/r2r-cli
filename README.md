@@ -34,7 +34,7 @@ Flags:
 
 ## Simple, and file-based
 
-You can see example input in `/data/*.yaml`. You can see that it is [Eta](https://eta.js.org/) / browser-side JavaScript based. This is further enhanced by plugins in `/packages/app/plugins/*.js`.
+You can see example input in `/data/*.yaml`. You can see that it is [Eta](https://eta.js.org/) / browser-side JavaScript based. This is further enhanced by plugins in `/packages/app/plugins`.
 
 Otherwise, quizzing (and mnemonic) data are generated and stored in `data.db`; with is a SQLite file. The schema can be seen in `/packages/app/db/*.go`.
 
@@ -56,7 +56,7 @@ However, in macOS and Linux, you will require to install either Google Chrome, o
 
 ## Deployment as a server
 
-You can do that, but an environment variable, `SECRET` will be required, which will be generated in `.env.local` by default.
+You can do that, but an environment variable, `SECRET` will be required, which will be generated in `config.yaml` by default.
 
 ## Parent project, as a concept
 

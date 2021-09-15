@@ -13,7 +13,7 @@
             "path": "packages/plugin-ja"
         },
         {
-            "path": "packages/plugin-zh"
+            "path": "submodules/plugin-zh"
         },
         {
             "path": "."

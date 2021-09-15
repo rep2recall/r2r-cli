@@ -97,17 +97,13 @@ model:
       _: |
         <%
           if (!it.pinyin) {
-            const r = await fetch(`https://zhres.herokuapp.com/api/vocab/match`, {
-              method: 'POST',
-              body: JSON.stringify({ entry: it.chinese }),
-              headers: { 'Content-Type': 'application/json' }
-            })
+            const r = await fetch(`/proxy/zh/vocab/match?q=${encodeURIComponent(it.chinese)}`)
             if (r.ok) {
               const { result } = await r.json()
               if (result[0]) {
                 it.simplified = result[0].simplified
                 it.traditional = result[0].traditional
-                it.pinyin = result[0].pinyin
+                it.pinyin = result[0].reading
                 it.english = result[0].english
               }
             }
@@ -118,11 +114,7 @@ model:
           }
 
           if (!it.sentences || !it.sentences.length) {
-            const r = await fetch(`https://zhres.herokuapp.com/api/sentence/q`, {
-              method: 'POST',
-              body: JSON.stringify({ q: it.chinese, limit: 5 }),
-              headers: { 'Content-Type': 'application/json' }
-            })
+            const r = await fetch(`/proxy/zh/sentence/q?q=${encodeURIComponent(it.chinese)}`)
             if (r.ok) {
               const { result } = await r.json()
               it.sentences = result
