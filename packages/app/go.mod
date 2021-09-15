@@ -47,6 +47,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/patarapolw/atexit v0.4.0
+	github.com/rep2recall/duolog v0.1.2
 	gorm.io/driver/sqlite v1.1.5
 )
 
