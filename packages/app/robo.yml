@@ -8,4 +8,4 @@ run:
 
 variables:
   buildTags: sqlite_fts5
-  exe: '"$([ $(go env GOOS) = "windows" ] && echo "rep2recall.exe" || echo "rep2recall")"'
+  exe: '"$([ $(go env GOOS) = "windows" ] && echo "r2r.exe" || echo "r2r")"'

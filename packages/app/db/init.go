@@ -2,18 +2,30 @@ package db
 
 import (
 	"database/sql"
-	"log"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/mattn/go-sqlite3"
-	"github.com/rep2recall/rep2recall/shared"
+	"github.com/rep2recall/r2r/shared"
 	gormSqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
-// TODO: check language and parse accordingly
 func tokenize(s string, lang string) string {
+	segmenter := shared.Config.Segmenter[lang]
+	if len(segmenter.Command) > 0 {
+		args := segmenter.Command[1:]
+		args = append(args, s)
+
+		cmd := exec.Command(segmenter.Command[0], args...)
+		cmd.Dir = filepath.Join(shared.UserDataDir, "plugins", "app")
+
+		if b, e := cmd.Output(); e == nil {
+			return string(b)
+		}
+	}
+
 	return s
 }
 
@@ -38,7 +50,7 @@ func Connect() *gorm.DB {
 		},
 	})
 	if err != nil {
-		log.Fatalln(err)
+		shared.Fatalln(err)
 	}
 
 	if err := db.AutoMigrate(
@@ -48,11 +60,11 @@ func Connect() *gorm.DB {
 		&NoteAttr{},
 		&Card{},
 	); err != nil {
-		log.Fatalln(err)
+		shared.Fatalln(err)
 	}
 
 	if err := NoteFTSInit(db); err != nil {
-		log.Fatalln(err)
+		shared.Fatalln(err)
 	}
 
 	return db

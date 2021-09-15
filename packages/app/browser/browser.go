@@ -23,7 +23,7 @@ func (b Browser) GetExecPath() string {
 		if path == "" {
 			path = b.locateEdge()
 		}
-	case "chrome", "google-chrome":
+	case "chrome", "google-chrome", "chromium":
 		path = b.locateChrome()
 	case "edge", "msedge", "microsoft-edge":
 		path = b.locateEdge()

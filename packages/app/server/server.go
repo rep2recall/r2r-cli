@@ -3,12 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
-	"os"
+	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/form3tech-oss/jwt-go"
@@ -16,19 +14,21 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/rep2recall/rep2recall/server/api"
-	"github.com/rep2recall/rep2recall/shared"
+	"github.com/patarapolw/atexit"
+	"github.com/rep2recall/r2r/shared"
 	"gorm.io/gorm"
 
 	jwtware "github.com/gofiber/jwt/v2"
 )
 
 type Server struct {
-	DB     *gorm.DB
-	Engine *fiber.App
-	Server net.Listener
-	port   int
+	DB         *gorm.DB
+	Engine     *fiber.App
+	Server     net.Listener
+	port       int
+	SubCommand []*exec.Cmd
 }
 
 type ServerOptions struct {
@@ -38,8 +38,6 @@ type ServerOptions struct {
 }
 
 func Serve(opts ServerOptions) Server {
-	f, _ := os.Create(filepath.Join(shared.UserDataDir, "server.log"))
-
 	app := fiber.New()
 
 	r := Server{
@@ -60,13 +58,13 @@ func Serve(opts ServerOptions) Server {
 					prettyBody = func() string {
 						var str map[string]interface{}
 						if e := json.Unmarshal(body, &str); e != nil {
-							log.New(os.Stderr, "", log.LstdFlags).Println(e)
+							shared.Logger.Println(e)
 							return ""
 						}
 
 						b, e := json.MarshalIndent(str, "", "  ")
 						if e != nil {
-							log.New(os.Stderr, "", log.LstdFlags).Println(e)
+							shared.Logger.Println(e)
 							return ""
 						}
 
@@ -75,7 +73,7 @@ func Serve(opts ServerOptions) Server {
 				}
 
 				if prettyBody != "" {
-					log.Printf("body: %s", prettyBody)
+					shared.Logger.Printf("body: %s", prettyBody)
 				}
 
 				return false
@@ -84,9 +82,7 @@ func Serve(opts ServerOptions) Server {
 	))
 	app.Use(logger.New(
 		logger.Config{
-			Output: filterUTF8{
-				Target: f,
-			},
+			Output: shared.LogWriter,
 			Format: "[${time}] ${status} - ${latency} ${method} ${path} ${queryParams}\t${body}\t${resBody}\n",
 		},
 	))
@@ -108,7 +104,7 @@ func Serve(opts ServerOptions) Server {
 
 	bootRand, e := shared.GenerateRandomBytes(64)
 	if e != nil {
-		log.Fatalln(e)
+		shared.Fatalln(e)
 	}
 
 	apiSrv.Post(
@@ -142,7 +138,30 @@ func Serve(opts ServerOptions) Server {
 		},
 	)
 
-	apiRouter := api.Router{
+	proxyRouter := app.Group(("/proxy"))
+
+	for k, v := range shared.Config.Proxy {
+		if len(v.Command) > 0 {
+			cmd := exec.Command(v.Command[0], v.Command[1:]...)
+			cmd.Env = append(cmd.Env, fmt.Sprintf("PORT=%d", v.Port))
+			cmd.Dir = filepath.Join(shared.UserDataDir, "plugins", "app")
+
+			r.SubCommand = append(r.SubCommand, cmd)
+			e := cmd.Start()
+
+			if e == nil {
+				proxyRouter.Group(k).Use(proxy.Balancer(proxy.Config{
+					Servers: []string{
+						fmt.Sprintf("http://localhost:%d", v.Port),
+					},
+				}))
+			} else {
+				shared.Logger.Println(e)
+			}
+		}
+	}
+
+	apiRouter := Router{
 		Router: app.Group(
 			"/api",
 			limiter.New(limiter.Config{
@@ -150,10 +169,6 @@ func Serve(opts ServerOptions) Server {
 				Expiration: 1 * time.Second,
 			}),
 			jwtware.New(jwtware.Config{
-				Filter: func(c *fiber.Ctx) bool {
-					path := c.Path()
-					return path == "/api/extra/gtts"
-				},
 				SigningKey: bootRand,
 			}),
 		),
@@ -168,25 +183,29 @@ func Serve(opts ServerOptions) Server {
 
 	r.DB = apiRouter.DB
 
-	log.Printf("Server running at http://localhost:%d\n", opts.Port)
+	shared.Logger.Printf("Server running at http://localhost:%d\n", opts.Port)
 
 	listener, e := net.Listen("tcp", fmt.Sprintf(":%d", opts.Port))
 	if e != nil {
-		log.Fatalln(e)
+		shared.Fatalln(e)
 	}
 	r.Server = listener
 
 	go func() {
 		if err := app.Listener(listener); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			shared.Fatalln(fmt.Sprintf("listen: %s\n", err))
 		}
 	}()
+
+	atexit.Register(func() {
+		r.Close()
+	})
 
 	return r
 }
 
-func (s Server) WaitUntilReady() {
-	rootURL := fmt.Sprintf("http://localhost:%d", s.port)
+func (r Server) WaitUntilReady() {
+	rootURL := fmt.Sprintf("http://localhost:%d", r.port)
 
 	for {
 		time.Sleep(1 * time.Second)
@@ -197,40 +216,14 @@ func (s Server) WaitUntilReady() {
 	}
 }
 
-func (s Server) Close() {
-	if s.DB != nil {
-		s.DB.Commit()
+func (r Server) Close() {
+	if r.DB != nil {
+		r.DB.Commit()
 	}
 
-	s.Server.Close()
-}
-
-type filterUTF8 struct {
-	Target *os.File
-}
-
-func (f filterUTF8) Write(p []byte) (n int, err error) {
-	segs := strings.Split(strings.TrimRight(string(p), "\n"), "\t")
-
-	s := ""
-	if len(segs) == 3 {
-		if !isObject(segs[1]) {
-			segs[1] = ""
-		}
-		if !isObject(segs[2]) {
-			segs[2] = ""
-		}
-		s = strings.Join(segs, "\t")
-	} else {
-		s = segs[0]
-	}
-	if s[len(s)-1] != '\n' {
-		s += "\n"
+	for _, c := range r.SubCommand {
+		c.Process.Kill()
 	}
 
-	return f.Target.Write([]byte(s))
-}
-
-func isObject(s string) bool {
-	return len(s) >= 2 && s[0] == '{' && s[len(s)-1] == '}'
+	r.Server.Close()
 }
