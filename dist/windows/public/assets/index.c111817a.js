@@ -1,1 +1,0 @@
-/* empty css                  */import{C as e}from"./vendor.0932b4e2.js";const o=document.querySelector("form"),t=document.querySelector('input[name="secret"]');o.onsubmit=o=>{o.preventDefault(),t.value&&e.post("/server/login",void 0,{auth:{username:"DEFAULT",password:t.value}}).then((({data:{token:e}})=>{location.href="/app?token="+e}))};

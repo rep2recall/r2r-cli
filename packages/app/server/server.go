@@ -15,7 +15,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/patarapolw/atexit"
 	"github.com/rep2recall/r2r/shared"
@@ -154,11 +153,12 @@ func Serve(opts ServerOptions) Server {
 			e := cmd.Start()
 
 			if e == nil {
-				proxyRouter.Group(k).Use(proxy.Balancer(proxy.Config{
-					Servers: []string{
-						fmt.Sprintf("http://localhost:%d", v.Port),
-					},
-				}))
+				port := v.Port
+				proxyRouter.Group(k).Use(func(c *fiber.Ctx) error {
+					return c.Redirect(
+						fmt.Sprintf("http://localhost:%d", port) + c.OriginalURL()[len(c.Route().Path):],
+					)
+				})
 			} else {
 				shared.Logger.Println(e)
 			}

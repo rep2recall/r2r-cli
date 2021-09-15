@@ -28,7 +28,7 @@ func main() {
 	} else {
 		app := fiber.New()
 		app.Use(logger.New())
-		app.Get("/proxy/zh/tokenize", func(c *fiber.Ctx) error {
+		app.Get("/tokenize", func(c *fiber.Ctx) error {
 			var query struct {
 				Q string `query:"q" validate:"required"`
 			}
