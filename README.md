@@ -1,34 +1,34 @@
-# rep2recall-min
+# r2r-cli
 
 ![](/docs/2021-06-13_14-23.png)
 
-Repeat until recall, with widening intervals, minimal version.
+Repeat until recall, with widening intervals, minimal CLI version.
 
 CLI and programmability-focused memorizing flashcard app.
 
 ```
-$ rep2recall --help
+$ r2r --help
 
 Repeat Until Recall - a simple, yet powerful, flashcard app
 
 Usage:
-   rep2recall {flags}
-   rep2recall <command> {flags}
+   r2r {flags}
+   r2r <command> {flags}
 
 Commands: 
-   clean                         clean the to-be-delete part of the database and exit
    help                          displays usage informationn
    load                          load the YAML into the database and exit
-   proxy                         start as proxy server, for development
-   quiz                          open the quiz window only
    version                       displays version number
 
 Flags: 
-   --browser                     browser to open (default: Chrome with Edge fallback) (default: .)
+   -b, --browser                 browser to open (default: Chrome with Edge fallback) (default: .)
+   -o, --db                      database to use (default: data.db)
    --debug                       whether to run in debug mode (default: false)
+   -f, --file                    files to use (must be loaded first) (default: .)
+   --filter                      keyword to filter (default: .)
    -h, --help                    displays usage information of the application or a command (default: false)
+   -m, --mode                    mode to run in (app / server / proxy / quiz) (default: app)
    -p, --port                    port to run the server (default: 25459)
-   --server                      run in server mode (don't open the browser) (default: false)
    -v, --version                 displays version number (default: false)
 ```
 

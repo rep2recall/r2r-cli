@@ -1,4 +1,4 @@
-module github.com/rep2recall/r2r-cli
+module github.com/rep2recall/r2r
 
 go 1.17
 
@@ -37,10 +37,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.8
 )
 
-require (
-	github.com/go-playground/validator v9.31.0+incompatible
-	gorm.io/driver/sqlite v1.1.5 // indirect
-)
+require github.com/go-playground/validator v9.31.0+incompatible
 
 require (
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
@@ -49,9 +46,11 @@ require (
 	github.com/gofiber/jwt/v2 v2.2.7
 	github.com/google/uuid v1.3.0
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/patarapolw/atexit v0.4.0
+	gorm.io/driver/sqlite v1.1.5
 )
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
-	github.com/patarapolw/atexit v0.4.0 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

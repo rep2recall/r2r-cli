@@ -60,7 +60,7 @@ func init() {
 	}
 
 	if Config.Secret == "" {
-		s, e := GenerateRandomString(32)
+		s, e := GenerateRandomString(64)
 		if e != nil {
 			Fatalln(e)
 		}

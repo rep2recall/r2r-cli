@@ -7,13 +7,13 @@
             "path": "packages/frontend"
         },
         {
-            "path": "packages/proxy-gtts"
+            "path": "packages/plugin-gtts"
         },
         {
-            "path": "packages/segmenter-ja_JP"
+            "path": "packages/plugin-ja"
         },
         {
-            "path": "packages/segmenter-zh_CN"
+            "path": "packages/plugin-zh"
         },
         {
             "path": "packages/server"

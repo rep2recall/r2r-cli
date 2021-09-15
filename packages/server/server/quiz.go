@@ -8,7 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/rep2recall/r2r-cli/db"
+	"github.com/rep2recall/r2r/db"
 	"gorm.io/gorm"
 )
 

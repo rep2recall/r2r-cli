@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	"github.com/rep2recall/r2r-cli/db"
+	"github.com/rep2recall/r2r/db"
 	"gorm.io/gorm"
 )
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rep2recall/r2r-cli/shared"
+	"github.com/rep2recall/r2r/shared"
 	"gorm.io/gorm"
 )
 

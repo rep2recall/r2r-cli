@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/mattn/go-sqlite3"
-	"github.com/rep2recall/r2r-cli/shared"
+	"github.com/rep2recall/r2r/shared"
 	gormSqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"

@@ -17,7 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/patarapolw/atexit"
-	"github.com/rep2recall/r2r-cli/shared"
+	"github.com/rep2recall/r2r/shared"
 	"gorm.io/gorm"
 
 	jwtware "github.com/gofiber/jwt/v2"

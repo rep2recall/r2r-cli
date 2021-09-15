@@ -8,10 +8,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/patarapolw/atexit"
-	"github.com/rep2recall/r2r-cli/browser"
-	"github.com/rep2recall/r2r-cli/db"
-	"github.com/rep2recall/r2r-cli/server"
-	"github.com/rep2recall/r2r-cli/shared"
+	"github.com/rep2recall/r2r/browser"
+	"github.com/rep2recall/r2r/db"
+	"github.com/rep2recall/r2r/server"
+	"github.com/rep2recall/r2r/shared"
 	"github.com/thatisuday/commando"
 	"gorm.io/gorm"
 )
