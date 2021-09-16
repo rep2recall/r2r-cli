@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/form3tech-oss/jwt-go"
@@ -192,10 +193,12 @@ func (r Server) WaitUntilReady() {
 func (r Server) Close() {
 	if r.DB != nil {
 		r.DB.Commit()
+		shared.Logger.Println("Committed the database")
 	}
 
 	for _, c := range r.SubCommand {
 		c.Process.Kill()
+		shared.Logger.Printf("Killed: %s\n", strings.Join(c.Args, " "))
 	}
 
 	r.Server.Close()

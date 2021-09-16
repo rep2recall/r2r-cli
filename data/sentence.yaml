@@ -1,0 +1,157 @@
+model:
+  - id: 2d8c91ba-6872-46cd-8f6a-8752a1568c7e
+    name: zh-sentence
+    back: |
+      <p>
+        <span class="clickable" onclick="speak(innerText)">
+          <%= it.cmn %>
+        </span>
+      </p>
+      <p><%= it.pinyin %></p>
+      <p><%= it.eng %></p>
+
+      <% if (it.vocabs && it.vocabs.length) { %>
+        <ul>
+          <% it.vocabs.map(r => { %>
+            <li>
+              <span class="clickable mr-4" onclick="speak(innerText)">
+                <%= r.simplified %>
+              </span>
+              <% if (r.traditional && r.traditional.length) { %>
+              <span class="mr-4">
+                <%= r.traditional.join(' | ') %>
+              </span>
+              <% } %>
+              <span class="mr-4">
+                [<%= r.pinyin.join(' / ') %>]
+              </span>
+              <span class="mr-4">
+                <%= r.english.join(' / ') %>
+              </span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+    shared: |
+      <style>
+      * {
+        font-weight: normal;
+        font-family: 'Noto Sans CJK SC';
+      }
+
+      .clickable {
+        cursor: pointer;
+      }
+      .clickable:hover {
+        color: blue;
+      }
+
+      .mr-4 {
+        margin-right: 1em;
+      }
+      </style>
+
+      <script>
+      (() => {
+        const allVoices = {}
+
+        window.speak = async (s, forceOffline) => {
+          if (!forceOffline && navigator.onLine) {
+            const audio = new Audio(
+              `/proxy/gtts/generate?lang=zh-CN&q=${encodeURIComponent(s)}&secret=${encodeURIComponent(
+                new URL(location.href).searchParams.get('secret') || ''
+              )}`
+            )
+            await audio.play().catch(() => speak(s, true))
+            return
+          }
+
+          if (Object.keys(allVoices).length === 0) {
+            // eslint-disable-next-line array-callback-return
+            window.speechSynthesis.getVoices().map((v) => {
+              allVoices[v.lang] = v.lang
+            })
+
+            window.speechSynthesis.onvoiceschanged = () => {
+              // eslint-disable-next-line array-callback-return
+              window.speechSynthesis.getVoices().map((v) => {
+                allVoices[v.lang] = v.lang
+              })
+            }
+          }
+
+          const voices = Object.keys(allVoices)
+          const stage1 = () => voices.filter((v) => v === 'zh' || v === 'cmn')[0]
+          const stage2 = () => {
+            return voices.filter((v) => /^zh[-_]?/i.test(v))[0]
+          }
+
+          const lang = stage1() || stage2() || ''
+
+          if (lang) {
+            const utterance = new window.SpeechSynthesisUtterance(s)
+            utterance.lang = lang
+            window.speechSynthesis.speak(utterance)
+
+            return new Promise((resolve) => {
+              utterance.onend = () => {
+                resolve()
+              }
+            })
+          }
+        }
+      })()
+      </script>
+
+    generator:
+      _: |
+        <%
+          if (!it.pinyin) {
+            it.pinyin = toPinyin(it.cmn)
+          }
+
+          if (!it.vocabs || !it.vocabs.length) {
+            it.vocabs = []
+            const r = await fetch(`/proxy/zh/tokenize?q=${encodeURIComponent(it.cmn)}`)
+            if (r.ok) {
+              const { result } = await r.json()
+
+              it.vocabs = await Promise.all(result.map(async (simplified) => {
+                const r = await fetch(`/proxy/zh/vocab/match?q=${encodeURIComponent(simplified)}`)
+
+                const it = { simplified,  pinyin: [], english: [] };
+                if (r.ok) {
+                  const { result } = await r.json()
+                  if (result.length) {
+                    it.simplified = result[0].simplified
+                    it.traditional = [...new Set(result.flatMap(r => [r.simplified, r.traditional]).filter(r => r && r != it.simplified))].sort()
+                    it.pinyin = [...new Set(result.map(r => r.reading))].sort()
+                    it.english = [...new Set(result.flatMap(r => r.english))].sort()
+                  }
+                }
+
+                return it
+              }))
+            }
+          }
+        %>
+
+template:
+  - id: 0bafe525-95d7-43bb-8102-9b0807687eaf
+    name: Chinese-English
+    modelId: 2d8c91ba-6872-46cd-8f6a-8752a1568c7e
+    front: |
+      <p><%= it.cmn %></p>
+  - id: 998bff3c-407d-48a3-b0d3-dbb32a6d73f5
+    name: English-Chinese
+    modelId: 2d8c91ba-6872-46cd-8f6a-8752a1568c7e
+    front: |
+      <p><%= it.eng %></p>
+
+note:
+  - id: 08a32cc6-eaac-4e08-9f99-1a3e038c0ee2
+    modelId: 2d8c91ba-6872-46cd-8f6a-8752a1568c7e
+    data:
+      cmn: 不要把我对你的容忍当成你不要脸的资本！
+      eng: อย่าเอาความอดทนของฉันไปเป็นความหน้าด้านของเธอ

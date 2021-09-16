@@ -47,6 +47,8 @@ func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
+	opts.Plugins = append(opts.Plugins, "document.querySelector('script[data-plugins]').setAttribute('data-plugins', 'loaded')")
+
 	pluginb, e := json.Marshal(strings.Join(opts.Plugins, ";\n"))
 	if e != nil {
 		panic(e)
@@ -55,12 +57,13 @@ func (b Browser) Eval(scripts []*EvalContext, opts EvalOptions) {
 	actions := []chromedp.Action{
 		chromedp.Navigate(fmt.Sprintf("http://localhost:%d/script", opts.Port)),
 		chromedp.WaitReady("body"),
-		chromedp.EvaluateAsDevTools(fmt.Sprintf(`
+		chromedp.Evaluate(fmt.Sprintf(`
 		s = document.createElement('script');
 		s.type = "module";
 		s.innerHTML = %s;
+		s.setAttribute('data-plugins', '')
 		document.body.append(s);`, string(pluginb)), nil),
-		chromedp.WaitReady("body"),
+		chromedp.WaitReady("script[data-plugins='loaded']"),
 	}
 
 	for i, s := range scripts {

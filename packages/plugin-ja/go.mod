@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.18.0
 	github.com/ikawaha/kagome-dict v1.0.4 // indirect
 	github.com/ikawaha/kagome/v2 v2.7.0
-	github.com/rep2recall/duolog v0.1.2
+	github.com/rep2recall/duolog v0.1.3
 )
 
 require (
