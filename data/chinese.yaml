@@ -1,6 +1,6 @@
 model:
   - id: ed93dc6f-3103-4ef2-a0b9-16b0b36720c6
-    name: Chinese vocab
+    name: zh-vocab
     back: |
       <% if (it.simplified) { %>
         <p>Simplified: <span class="clickable" onclick="speak(innerText)"> <%= it.simplified %> </span></p>
@@ -100,11 +100,11 @@ model:
             const r = await fetch(`/proxy/zh/vocab/match?q=${encodeURIComponent(it.chinese)}`)
             if (r.ok) {
               const { result } = await r.json()
-              if (result[0]) {
+              if (result.length) {
                 it.simplified = result[0].simplified
-                it.traditional = result[0].traditional
-                it.pinyin = result[0].reading
-                it.english = result[0].english
+                it.traditional = [...new Set(result.flatMap(r => [r.simplified, r.traditional]).filter(r => r && r != it.simplified))].sort()
+                it.pinyin = [...new Set(result.map(r => r.reading))].sort()
+                it.english = [...new Set(result.flatMap(r => r.english))].sort()
               }
             }
           }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,33 +16,59 @@ import (
 type Tokens []tokenizer.Token
 
 func (t Tokens) SearchForm() []string {
-	segments := []string{}
-
-	for _, t := range t {
-		segments = append(segments, t.Surface)
-
-		base, is_base := t.BaseForm()
-		if is_base && base != t.Surface {
-			segments = append(segments, base)
+	regex := regexp.MustCompile(`[\p{Han}\p{Katakana}\p{Hiragana}]`)
+	m := make(map[string]bool)
+	doAppend := func(t string) {
+		if regex.MatchString(t) {
+			m[t] = true
 		}
 	}
 
-	return segments
+	for _, t := range t {
+		doAppend(t.Surface)
+
+		base, is_base := t.BaseForm()
+		if is_base && base != t.Surface {
+			doAppend(base)
+		}
+	}
+
+	tokens := []string{}
+	for k, v := range m {
+		if v {
+			tokens = append(tokens, k)
+		}
+	}
+
+	return tokens
 }
 
 func (t Tokens) BaseForm() []string {
-	segments := []string{}
+	regex := regexp.MustCompile(`[\p{Han}\p{Katakana}\p{Hiragana}]`)
+	m := make(map[string]bool)
+	doAppend := func(t string) {
+		if regex.MatchString(t) {
+			m[t] = true
+		}
+	}
 
 	for _, t := range t {
 		base, is_base := t.BaseForm()
 		if is_base {
-			segments = append(segments, base)
+			doAppend(base)
 		} else {
-			segments = append(segments, t.Surface)
+			doAppend(t.Surface)
 		}
 	}
 
-	return segments
+	tokens := []string{}
+	for k, v := range m {
+		if v {
+			tokens = append(tokens, k)
+		}
+	}
+
+	return tokens
 }
 
 var t *tokenizer.Tokenizer

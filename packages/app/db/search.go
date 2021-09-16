@@ -334,11 +334,11 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 	}
 
 	if includes.Template {
-		tx = tx.Joins("Template")
+		rootTx = rootTx.Joins("JOIN template ON template.id = card.template_id")
 	}
 
 	if includes.Model {
-		tx = tx.Joins("Model")
+		rootTx = rootTx.Joins("JOIN model ON model.id = template.model_id")
 	}
 
 	if orCond != nil {
