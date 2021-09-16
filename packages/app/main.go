@@ -17,6 +17,8 @@ import (
 )
 
 func main() {
+	defer atexit.ListenPanic()
+
 	version := "0.4.1"
 
 	commando.
