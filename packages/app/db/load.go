@@ -450,18 +450,46 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		}
 	}
 
+	noteMap := make(map[string]bool)
+	for _, n := range loadFile.Note {
+		noteMap[n.ID] = true
+	}
+
 	for id, ca := range cardToCompile {
 		if ca.If != "false" {
+			c0 := Card{
+				TemplateID: ca.Template.ID,
+				NoteID:     ca.NoteID,
+			}
+
 			if r := tx.
-				Clauses(clause.OnConflict{
-					DoNothing: true,
-				}).
-				Create(&Card{
-					ID:         id,
+				Where(Card{
 					TemplateID: ca.Template.ID,
 					NoteID:     ca.NoteID,
-				}); r.Error != nil {
+				}).
+				Attrs(Card{
+					ID: id,
+				}).
+				FirstOrCreate(&c0); r.Error != nil {
 				return r.Error
+			}
+
+			if noteMap[ca.NoteID] {
+				filename, e := c0.Filename.Get()
+				if e != nil {
+					return e
+				}
+
+				filename[f] = true
+
+				if e := c0.Filename.Set(filename); e != nil {
+					return e
+				}
+
+				if r := tx.
+					Save(&c0); r.Error != nil {
+					return r.Error
+				}
 			}
 		} else {
 			if r := tx.
@@ -492,7 +520,19 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 		for _, t := range c.Tag {
 			tag[t] = true
 		}
+
 		if e := c0.Tag.Set(tag); e != nil {
+			return e
+		}
+
+		filename, e := c0.Filename.Get()
+		if e != nil {
+			return e
+		}
+
+		filename[f] = true
+
+		if e := c0.Filename.Set(filename); e != nil {
 			return e
 		}
 
@@ -503,6 +543,7 @@ func Load(tx *gorm.DB, f string, opts LoadOptions) error {
 			TemplateID: c.TemplateID,
 			NoteID:     c.NoteID,
 			Tag:        c0.Tag,
+			Filename:   c0.Filename,
 			Front:      c.Front,
 			Back:       c.Back,
 			Shared:     c.Shared,

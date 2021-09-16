@@ -35,6 +35,7 @@ type Card struct {
 	RightStreak int            `gorm:"index"`
 	WrongStreak int            `gorm:"index"`
 	Tag         SpaceSeparated `gorm:"index"`
+	Filename    SpaceSeparated `gorm:"index"`
 }
 
 type SpaceSeparated struct {
