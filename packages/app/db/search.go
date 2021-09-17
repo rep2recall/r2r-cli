@@ -240,6 +240,8 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 		switch str.Key {
 		case "tag":
 			return tx.Where("card.tag LIKE '% '||?||' %'", value)
+		case "filename":
+			return tx.Where("card.filename LIKE '%'||?||'%'", value)
 		case "is":
 			switch value {
 			case "new":
@@ -256,6 +258,8 @@ func Search(tx *gorm.DB, q string) *gorm.DB {
 			return tx.Where("FALSE")
 		case "id":
 			return tx.Where("card.id = ?", value)
+		case "key":
+			return tx.Where("card.key = ?", value)
 		case "noteId":
 			return tx.Where("card.note_id = ?", value)
 		case "templateId":
